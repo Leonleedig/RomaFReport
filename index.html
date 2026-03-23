@@ -3,7 +3,7 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-  <title>民國115年度第1季財務報表</title>
+  <title>民國115年度第1季 羅馬假期財務報表</title>
   
   <!-- 載入 Tailwind CSS (CDN) -->
   <script src="https://cdn.tailwindcss.com"></script>
@@ -32,23 +32,19 @@
 </head>
 <body class="bg-slate-50 text-slate-800 font-sans h-screen flex flex-col overflow-hidden">
 
-  <!-- 頂部導航 -->
+  <!-- 頂部導航：移除圖標，改為文字與圖標按鈕水平居中 -->
   <header class="bg-white shadow-sm border-b border-slate-200 z-30 shrink-0">
-    <div class="max-w-6xl mx-auto px-4 py-4 flex flex-col sm:flex-row items-center justify-between gap-4">
-      <div class="flex items-center gap-2 text-indigo-600">
-        <i class="ph ph-file-text text-3xl"></i>
-        <h1 class="text-2xl font-bold text-slate-800 tracking-tight">民國115年度第1季 羅馬假期財務報表</h1>
-      </div>
+    <div class="max-w-6xl mx-auto px-4 py-4 flex items-center justify-center gap-3">
+      <h1 class="text-xl md:text-2xl font-bold text-slate-800 tracking-tight">民國115年度第1季 羅馬假期財務報表</h1>
       
-      <div class="flex w-full sm:w-auto items-center gap-2">
-        <button 
-          id="syncBtn"
-          class="bg-indigo-600 hover:bg-indigo-700 disabled:bg-indigo-300 text-white px-4 py-2 rounded-lg text-sm font-medium transition-colors flex items-center gap-2 w-full justify-center sm:w-auto shadow-sm"
-        >
-          <i id="syncIcon" class="ph ph-cloud-arrow-down text-lg"></i>
-          <span id="syncText">同步最新資料</span>
-        </button>
-      </div>
+      <button 
+        id="syncBtn"
+        title="同步最新資料"
+        class="text-indigo-600 hover:text-indigo-800 transition-colors p-1 flex items-center justify-center disabled:text-indigo-300"
+      >
+        <i id="syncIcon" class="ph ph-arrows-clockwise text-2xl md:text-3xl"></i>
+        <span id="syncText" class="hidden">同步最新資料</span>
+      </button>
     </div>
   </header>
 
@@ -99,7 +95,7 @@
         </div>
         
         <div class="flex-1 overflow-y-auto relative no-scrollbar">
-          <!-- 桌面版 -->
+          <!-- 桌面版標題與表格 -->
           <div class="hidden md:block">
             <table class="w-full text-left border-separate table-fixed" style="border-spacing: 0;">
               <thead>
@@ -113,8 +109,17 @@
             </table>
           </div>
 
-          <!-- 手機版 -->
-          <div id="mobileCardList" class="md:hidden flex flex-col pb-4"></div>
+          <!-- 手機版容器 (新增固定標題列) -->
+          <div class="md:hidden flex flex-col">
+            <!-- 手機版固定欄名列 -->
+            <div class="sticky top-0 z-20 bg-slate-50 border-b border-slate-200 px-4 h-10 flex items-center justify-between text-[11px] font-bold text-slate-500 uppercase tracking-wider">
+               <div class="w-16 pl-2">日期</div>
+               <div class="flex-1 px-2 text-center">項目 / 明細</div>
+               <div class="w-20 text-right">金額</div>
+            </div>
+            <!-- 手機版資料列表 -->
+            <div id="mobileCardList" class="flex flex-col pb-4"></div>
+          </div>
 
           <div id="emptyState" class="hidden py-12 text-center text-slate-500 h-full flex-col items-center justify-center">
             <i class="ph ph-funnel text-4xl text-slate-300 mb-2"></i>
@@ -236,7 +241,6 @@
       modalError.classList.add('hidden');
       modalLoading.classList.add('hidden');
       
-      // 🚀 核心邏輯：判斷有無圖片網址，決定是否隱藏整個容器
       if (expense.receiptUrl && expense.receiptUrl.trim() !== '') {
         modalImageContainer.classList.remove('hidden');
         modalLoading.classList.remove('hidden');
@@ -260,16 +264,12 @@
       desktopTableBody.innerHTML = '';
       mobileCardList.innerHTML = '';
       if (filteredExpenses.length === 0) {
-        desktopTableBody.parentElement.classList.add('hidden');
-        mobileCardList.classList.add('hidden');
         emptyState.classList.remove('hidden');
         emptyState.classList.add('flex');
         return;
       }
       emptyState.classList.add('hidden');
       emptyState.classList.remove('flex');
-      desktopTableBody.parentElement.classList.remove('hidden');
-      mobileCardList.classList.remove('hidden');
 
       const groupedData = {};
       filteredExpenses.forEach(expense => {
@@ -304,7 +304,7 @@
         desktopTableBody.appendChild(masterTr);
 
         const masterCard = document.createElement('div');
-        masterCard.className = 'sticky top-0 z-10 bg-white border-y border-slate-200 px-4 py-3 flex items-center justify-between cursor-pointer active:bg-slate-50 transition-colors select-none';
+        masterCard.className = 'sticky top-[40px] z-10 bg-white border-y border-slate-200 px-4 py-3 flex items-center justify-between cursor-pointer active:bg-slate-50 transition-colors select-none';
         masterCard.onclick = () => toggleGroup(groupName);
         masterCard.innerHTML = `<div class="flex items-center gap-2 min-w-0"><i class="ph ${isExpanded ? 'ph-caret-down' : 'ph-caret-right'} text-slate-400 text-base font-bold shrink-0"></i><span class="font-bold text-slate-800 text-sm text-nowrap-truncate">${groupName}</span><span class="text-[10px] text-slate-500 font-medium shrink-0">(${group.items.length} 筆)</span></div><div class="text-base font-bold tabular-nums ${groupColorClass} whitespace-nowrap ml-2 shrink-0">${groupFormattedTotal}</div>`;
         mobileCardList.appendChild(masterCard);
@@ -313,7 +313,6 @@
           group.items.forEach(expense => {
             const childColorClass = expense.amount < 0 ? 'text-rose-600' : 'text-emerald-600';
             const childFormattedAmount = formatMoney(expense.amount);
-            // 🚀 核心邏輯：偵測有無圖片連結，決定是否顯示圖示
             const hasReceiptIcon = (expense.receiptUrl && expense.receiptUrl.trim() !== '') ? '<i class="ph ph-image text-slate-400 text-base ml-1"></i>' : '';
 
             const childTr = document.createElement('tr');
@@ -323,9 +322,16 @@
             desktopTableBody.appendChild(childTr);
 
             const childCard = document.createElement('div');
-            childCard.className = 'bg-transparent p-4 border-b border-slate-200 hover:bg-slate-50 active:bg-slate-100 transition-colors cursor-pointer flex justify-between items-center group/card';
+            childCard.className = 'bg-transparent px-4 py-4 border-b border-slate-100 hover:bg-slate-50 active:bg-slate-100 transition-colors cursor-pointer flex items-center justify-between';
             childCard.onclick = () => openModal(expense.id);
-            childCard.innerHTML = `<div class="flex flex-row items-center gap-4 min-w-0 flex-1 justify-between pl-4"><span class="text-[10px] text-slate-400 whitespace-nowrap w-16">${expense.date || '-'}</span><span class="text-sm text-slate-700 font-medium text-nowrap-truncate flex-1 px-2 flex items-center">${expense.category || '-'}${hasReceiptIcon}</span><span class="text-sm font-bold tabular-nums ${childColorClass} whitespace-nowrap min-w-[80px] text-right">${childFormattedAmount}</span></div>`;
+            childCard.innerHTML = `
+                <div class="w-16 text-[10px] text-slate-400 whitespace-nowrap shrink-0">${expense.date || '-'}</div>
+                <div class="flex-1 px-2 text-sm text-slate-700 font-medium text-nowrap-truncate flex items-center min-w-0">
+                  <span class="truncate">${expense.category || '-'}</span>
+                  ${hasReceiptIcon}
+                </div>
+                <div class="w-20 text-sm font-bold tabular-nums ${childColorClass} whitespace-nowrap text-right shrink-0">${childFormattedAmount}</div>
+            `;
             mobileCardList.appendChild(childCard);
           });
         }
@@ -355,7 +361,6 @@
         const descStr = cleanValues[5] || '';
         const contentStr = cleanValues[10] || ''; 
         const categoryStr = cleanValues[11] || '未分類';
-        // 🚀 核心邏輯：從 M 欄 (索引 12) 擷取圖片網址
         const receiptUrlStr = cleanValues[12] || ''; 
         
         let finalAmount = 0;
@@ -375,8 +380,7 @@
 
     async function handleLoadData() {
       syncBtn.disabled = true;
-      syncText.textContent = '同步中...';
-      syncIcon.className = 'ph ph-spinner-gap animate-spin text-lg';
+      syncIcon.className = 'ph ph-arrows-clockwise animate-spin text-2xl md:text-3xl';
       errorBox.classList.add('hidden');
       const freshCsvUrl = `${csvUrl}&t=${Date.now()}`;
       try {
@@ -395,8 +399,7 @@
         errorBox.classList.remove('hidden');
       } finally {
         syncBtn.disabled = false;
-        syncText.textContent = '同步最新資料';
-        syncIcon.className = 'ph ph-cloud-arrow-down text-lg';
+        syncIcon.className = 'ph ph-arrows-clockwise text-2xl md:text-3xl';
       }
     }
 
