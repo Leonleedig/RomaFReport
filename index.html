@@ -17,6 +17,7 @@
     .modal-enter-active { opacity: 1; transform: scale(1); transition: all 0.2s ease-out; }
     .modal-exit { opacity: 1; transform: scale(1); }
     .modal-exit-active { opacity: 0; transform: scale(0.95); transition: all 0.2s ease-in; }
+    
     /* 隱藏外觀捲軸但保持可捲動 */
     .no-scrollbar::-webkit-scrollbar { display: none; }
     .no-scrollbar { -ms-overflow-style: none; scrollbar-width: none; }
@@ -28,22 +29,48 @@
       overflow: hidden;
       text-overflow: ellipsis;
     }
+
+    /* 🚀 標題隨螢幕寬度縮放，確保不換行 */
+    .responsive-title {
+      font-size: clamp(1rem, 4vw, 1.5rem);
+      white-space: nowrap;
+    }
+
+    /* 防止圖片被選取 */
+    .no-select {
+      -webkit-touch-callout: none;
+      -webkit-user-select: none;
+      -khtml-user-select: none;
+      -moz-user-select: none;
+      -ms-user-select: none;
+      user-select: none;
+    }
+
+    /* 圖片保護層 */
+    .img-overlay {
+      position: absolute;
+      top: 0;
+      left: 0;
+      width: 100%;
+      height: 100%;
+      z-index: 10;
+      background: rgba(0,0,0,0);
+    }
   </style>
 </head>
 <body class="bg-slate-50 text-slate-800 font-sans h-screen flex flex-col overflow-hidden">
 
-  <!-- 頂部導航：移除圖標，改為文字與圖標按鈕水平居中 -->
+  <!-- 頂部導航 -->
   <header class="bg-white shadow-sm border-b border-slate-200 z-30 shrink-0">
-    <div class="max-w-6xl mx-auto px-4 py-4 flex items-center justify-center gap-3">
-      <h1 class="text-xl md:text-2xl font-bold text-slate-800 tracking-tight">民國115年度第1季 羅馬假期財務報表</h1>
+    <div class="max-w-6xl mx-auto px-4 py-4 flex items-center justify-center gap-2 flex-nowrap">
+      <h1 class="font-bold text-slate-800 tracking-tight responsive-title">民國115年度第1季 羅馬假期財務報表</h1>
       
       <button 
         id="syncBtn"
         title="同步最新資料"
-        class="text-indigo-600 hover:text-indigo-800 transition-colors p-1 flex items-center justify-center disabled:text-indigo-300"
+        class="text-indigo-600 hover:text-indigo-800 transition-colors p-1 flex items-center justify-center disabled:text-indigo-300 shrink-0"
       >
         <i id="syncIcon" class="ph ph-arrows-clockwise text-2xl md:text-3xl"></i>
-        <span id="syncText" class="hidden">同步最新資料</span>
       </button>
     </div>
   </header>
@@ -95,7 +122,6 @@
         </div>
         
         <div class="flex-1 overflow-y-auto relative no-scrollbar">
-          <!-- 桌面版標題與表格 -->
           <div class="hidden md:block">
             <table class="w-full text-left border-separate table-fixed" style="border-spacing: 0;">
               <thead>
@@ -109,15 +135,12 @@
             </table>
           </div>
 
-          <!-- 手機版容器 (新增固定標題列) -->
           <div class="md:hidden flex flex-col">
-            <!-- 手機版固定欄名列 -->
             <div class="sticky top-0 z-20 bg-slate-50 border-b border-slate-200 px-4 h-10 flex items-center justify-between text-[11px] font-bold text-slate-500 uppercase tracking-wider">
                <div class="w-16 pl-2">日期</div>
                <div class="flex-1 px-2 text-center">項目 / 明細</div>
                <div class="w-20 text-right">金額</div>
             </div>
-            <!-- 手機版資料列表 -->
             <div id="mobileCardList" class="flex flex-col pb-4"></div>
           </div>
 
@@ -130,42 +153,63 @@
     </main>
   </div>
 
-  <!-- 交易明細燈箱 (Modal) -->
-  <div id="receiptModal" class="fixed inset-0 z-50 flex items-center justify-center bg-slate-900/80 backdrop-blur-sm p-4 hidden modal-enter">
-    <div class="bg-white rounded-2xl shadow-2xl max-w-2xl w-full flex flex-col overflow-hidden" id="modalContentWrapper">
-      <!-- 標題欄 -->
-      <div class="flex items-center justify-between px-4 py-3 md:px-6 md:py-4 border-b border-slate-100 bg-white">
+  <!-- 交易明細燈箱 (Modal) - 🚀 結構調整為固定頭部與可捲動內容 -->
+  <div id="receiptModal" class="fixed inset-0 z-50 flex items-center justify-center bg-slate-900/90 backdrop-blur-sm hidden modal-enter p-0 sm:p-4">
+    <div class="bg-white w-full h-full sm:h-auto sm:max-h-[95vh] sm:max-w-4xl sm:rounded-2xl shadow-2xl flex flex-col overflow-hidden" id="modalContentWrapper">
+      
+      <!-- 固定標題欄 (Sticky Header) -->
+      <div class="shrink-0 flex items-center justify-between px-4 py-3 md:px-6 md:py-4 border-b border-slate-100 bg-white z-50">
         <div><h3 id="modalMainTitle" class="text-base md:text-lg font-bold text-slate-800">交易明細</h3></div>
         <button id="closeModalBtn" class="p-2 text-slate-400 hover:text-slate-600 hover:bg-slate-100 rounded-full transition-colors focus:outline-none bg-slate-50 shrink-0">
-          <i class="ph ph-x text-xl"></i>
+          <i class="ph ph-x text-2xl"></i>
         </button>
       </div>
 
-      <!-- 文字內容區 -->
-      <div class="px-4 py-5 md:px-6 bg-white border-b border-slate-100">
-        <div class="flex justify-between items-start gap-4 mb-3">
-          <h4 id="modalCategory" class="text-2xl md:text-3xl font-bold text-slate-800 break-words flex-1"></h4>
-          <div id="modalAmount" class="text-2xl md:text-3xl font-bold tabular-nums text-right shrink-0"></div>
+      <!-- 可捲動內容區 (Scrollable Content) -->
+      <div class="flex-1 overflow-y-auto no-scrollbar">
+        <!-- 文字資訊 -->
+        <div class="px-4 py-6 md:px-8 md:py-8 bg-white">
+          <div class="flex justify-between items-start gap-4 mb-4">
+            <h4 id="modalCategory" class="text-2xl md:text-4xl font-bold text-slate-800 break-words flex-1"></h4>
+            <div id="modalAmount" class="text-2xl md:text-4xl font-bold tabular-nums text-right shrink-0"></div>
+          </div>
+          <div class="flex flex-wrap items-center gap-3 text-slate-600">
+            <span id="modalDate" class="flex items-center gap-1 font-medium bg-slate-100 px-3 py-1.5 rounded-md text-sm md:text-base"><i class="ph ph-calendar-blank"></i> </span>
+            <span id="modalSubtitle" class="text-base md:text-lg font-medium"></span>
+          </div>
         </div>
-        <div class="flex flex-wrap items-center gap-3 text-slate-600">
-          <span id="modalDate" class="flex items-center gap-1 font-medium bg-slate-100 px-2.5 py-1 rounded-md text-sm"><i class="ph ph-calendar-blank"></i> </span>
-          <span id="modalSubtitle" class="text-base font-medium"></span>
+        
+        <!-- 圖片容器 - 🚀 全寬顯示並加入防盜圖層 -->
+        <div id="modalImageContainer" class="bg-slate-100 flex flex-col items-center justify-start relative hidden no-select">
+          <!-- 透明保護層 -->
+          <div class="img-overlay"></div>
+          
+          <img 
+            id="modalImage" 
+            src="" 
+            alt="單據圖片" 
+            class="w-full h-auto object-contain pointer-events-none"
+            oncontextmenu="return false;"
+            ondragstart="return false;"
+          />
+          
+          <div id="modalLoading" class="py-20 flex flex-col items-center justify-center text-slate-400 gap-3">
+            <i class="ph ph-spinner-gap animate-spin text-4xl text-indigo-400"></i>
+            <p class="text-sm">單據載入中...</p>
+          </div>
+
+          <div id="modalError" class="hidden py-20 flex flex-col items-center justify-center text-slate-400 gap-3 w-full text-center px-4">
+            <i class="ph ph-image-broken text-5xl text-slate-300"></i>
+            <p class="text-sm">無法顯示圖片。可能是連結失效或格式不支援。</p>
+            <a id="modalExternalLink" href="#" target="_blank" class="text-sm text-indigo-600 hover:underline mt-2 bg-white px-4 py-2 rounded-full shadow-sm border border-slate-200 pointer-events-auto">
+              在新分頁開啟原始單據
+            </a>
+          </div>
         </div>
-      </div>
-      
-      <!-- 圖片容器 (偵測有無連結，無則隱藏) -->
-      <div id="modalImageContainer" class="flex-1 overflow-auto p-4 md:p-6 bg-slate-50 flex flex-col items-center justify-center relative min-h-[30vh] hidden">
-        <img id="modalImage" src="" alt="單據圖片" class="max-w-full h-auto max-h-[50vh] object-contain rounded-lg shadow-sm border border-slate-200 hidden" />
-        <div id="modalLoading" class="flex flex-col items-center justify-center text-slate-400 gap-3 hidden">
-          <i class="ph ph-spinner-gap animate-spin text-4xl text-indigo-400"></i>
-          <p class="text-sm">圖片載入中...</p>
-        </div>
-        <div id="modalError" class="hidden flex-col items-center justify-center text-slate-400 gap-3 w-full h-full text-center px-4">
-          <i class="ph ph-image-broken text-5xl text-slate-300"></i>
-          <p class="text-sm">無法載入圖片。連結可能已失效。</p>
-          <a id="modalExternalLink" href="#" target="_blank" class="text-sm text-indigo-600 hover:underline mt-2 bg-white px-4 py-2 rounded-full shadow-sm border border-slate-200">
-            在新分頁開啟原網址
-          </a>
+        
+        <!-- 安全提示底部 -->
+        <div class="p-6 text-center text-slate-400 text-xs bg-white border-t border-slate-50 italic">
+          — 財務明細僅供閱覽，單據版權所有 —
         </div>
       </div>
     </div>
@@ -185,7 +229,6 @@
 
     const searchInput = document.getElementById('searchInput');
     const syncBtn = document.getElementById('syncBtn');
-    const syncText = document.getElementById('syncText');
     const syncIcon = document.getElementById('syncIcon');
     const errorBox = document.getElementById('errorBox');
     const errorMsg = document.getElementById('errorMsg');
@@ -235,7 +278,7 @@
       modalCategory.textContent = expense.category || '未分類';
       modalDate.innerHTML = `<i class="ph ph-calendar-blank"></i> ${expense.date || '-'}`;
       modalAmount.textContent = formatMoney(expense.amount);
-      modalAmount.className = `text-2xl md:text-3xl font-bold tabular-nums text-right shrink-0 ${expense.amount < 0 ? 'text-rose-600' : 'text-emerald-600'}`;
+      modalAmount.className = `text-2xl md:text-4xl font-bold tabular-nums text-right shrink-0 ${expense.amount < 0 ? 'text-rose-600' : 'text-emerald-600'}`;
       
       modalImage.classList.add('hidden');
       modalError.classList.add('hidden');
