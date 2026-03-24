@@ -2,8 +2,8 @@
 <html lang="zh-TW">
 <head>
   <meta charset="UTF-8">
-  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-  <title>民國115年度第1季 羅馬假期財務報表</title>
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>羅馬假期財務報表</title>
   
   <script src="https://cdn.tailwindcss.com"></script>
   <script src="https://unpkg.com/@phosphor-icons/web"></script>
@@ -25,7 +25,6 @@
       text-overflow: ellipsis;
     }
 
-    /* 🚀 標題與算式彈性縮放 */
     .responsive-title {
       font-size: clamp(1rem, 4.5vw, 1.5rem);
       white-space: nowrap;
@@ -50,19 +49,11 @@
       background: rgba(0,0,0,0);
     }
 
-    #zoomWrapper {
-      transform-origin: top center;
-      transition: transform 0.1s ease-out;
-      will-change: transform;
-    }
-
-    /* 管理者觸發字樣 */
     .admin-trigger {
       cursor: pointer;
       user-select: none;
     }
 
-    /* 🚀 列印專用樣式：解除固定高度與捲軸限制，讓頁面可跨頁完整印出 */
     @media print {
       * {
         -webkit-print-color-adjust: exact !important;
@@ -78,20 +69,15 @@
         overflow: visible !important;
         display: block !important;
       }
-      #zoomWrapper {
-        transform: none !important;
-      }
-      /* 隱藏不必要的控制項與列印無關的UI */
+      
       #syncBtn, .search-container, #adminPanel {
         display: none !important;
       }
-      /* 確保署名區在列印時強制顯示，且不被切斷 */
       .signature-area {
         display: flex !important;
         page-break-inside: avoid;
         break-inside: avoid;
       }
-      /* 確保表格標題在跨頁時重複顯示 */
       thead {
         display: table-header-group;
       }
@@ -107,8 +93,9 @@
   <!-- 頂部導航 -->
   <header class="bg-white shadow-sm border-b border-slate-200 z-40 shrink-0">
     <div class="max-w-6xl mx-auto px-4 py-4 flex items-center justify-center gap-2 flex-nowrap">
-      <h1 class="font-bold text-slate-800 tracking-tight responsive-title">
-        民國115年度第1季 <span class="admin-trigger" onclick="toggleAdminPanel()">羅馬假期</span>財務報表
+      <!-- 🚀 動態標題區塊 -->
+      <h1 id="mainTitle" class="font-bold text-slate-800 tracking-tight responsive-title">
+        載入資料中...
       </h1>
       
       <button 
@@ -123,137 +110,131 @@
   </header>
 
   <!-- 主要內容區 -->
-  <div class="flex-1 overflow-y-auto no-scrollbar pb-10" id="scrollContainer">
-    <div id="zoomWrapper">
-      <main class="max-w-6xl mx-auto px-4 py-8">
+  <div class="flex-1 overflow-auto no-scrollbar pb-10" id="scrollContainer">
+    <main class="max-w-6xl mx-auto px-4 py-8">
+      
+      <!-- 整合式管理面板 -->
+      <div id="adminPanel" class="hidden mb-10 overflow-hidden bg-white border border-indigo-200 rounded-2xl shadow-lg transition-all">
+        <div class="bg-indigo-600 px-4 py-2 flex justify-between items-center">
+          <div class="flex items-center gap-2 text-white text-sm font-bold">
+            <i class="ph ph-shield-check"></i>
+            <span>管理面板 (本地強制覆蓋)</span>
+          </div>
+          <button onclick="toggleAdminPanel()" class="text-indigo-200 hover:text-white"><i class="ph ph-x-circle text-xl"></i></button>
+        </div>
+
+        <div id="adminLocked" class="p-6 flex flex-col items-center gap-4">
+          <p class="text-sm text-slate-500 font-medium text-center">本區域受密碼保護，請輸入管理密碼解鎖日期篩選功能</p>
+          <div class="flex w-full max-w-sm gap-2">
+            <input type="password" id="adminPasswordInput" placeholder="請輸入密碼..." class="flex-1 border border-slate-200 rounded-lg px-4 py-2 text-sm outline-none focus:ring-2 focus:ring-indigo-500" />
+            <button onclick="unlockAdmin()" class="bg-indigo-600 text-white px-4 py-2 rounded-lg text-sm font-bold hover:bg-indigo-700 transition-colors">解鎖操作</button>
+          </div>
+          <div id="adminAuthError" class="hidden text-rose-500 text-xs font-bold animate-pulse">密碼錯誤，請重新輸入</div>
+        </div>
+
+        <div id="adminUnlocked" class="hidden p-6 bg-indigo-50/50">
+          <div class="grid grid-cols-1 sm:grid-cols-2 gap-4">
+            <div class="flex flex-col gap-1">
+              <label class="text-xs text-indigo-600 font-bold ml-1">擷取交易開始日期</label>
+              <select id="startDateSelect" onchange="handleAdminFilterChange()" class="bg-white border border-indigo-200 rounded-lg px-3 py-2 text-sm focus:ring-2 focus:ring-indigo-500 outline-none"></select>
+            </div>
+            <div class="flex flex-col gap-1">
+              <label class="text-xs text-indigo-600 font-bold ml-1">擷取交易結束日期</label>
+              <select id="endDateSelect" onchange="handleAdminFilterChange()" class="bg-white border border-indigo-200 rounded-lg px-3 py-2 text-sm focus:ring-2 focus:ring-indigo-500 outline-none"></select>
+            </div>
+          </div>
+          <div class="mt-4 flex justify-between items-center">
+            <span class="text-[10px] text-indigo-400 italic font-medium">※ 設定後將覆蓋全域 CONFIG，僅在您的設備上生效</span>
+            <button onclick="resetAdminStatus()" class="text-xs text-indigo-600 hover:underline font-bold">重新鎖定並恢復全域預設</button>
+          </div>
+        </div>
+      </div>
+
+      <div id="errorBox" class="hidden mb-6 bg-red-50 border-l-4 border-red-500 p-4 rounded-md flex items-start gap-3">
+        <i class="ph ph-warning-circle text-red-500 text-xl shrink-0 mt-0.5"></i>
+        <p id="errorMsg" class="text-red-700 text-sm break-all"></p>
+      </div>
+
+      <!-- 總覽算式區 -->
+      <div class="mb-12 flex justify-center w-full shrink-0 px-2">
+        <div class="flex items-center gap-2 md:gap-8 math-text whitespace-nowrap">
+          <div class="flex flex-col items-center">
+            <span class="math-val font-bold tabular-nums">216,730</span>
+            <span class="math-label text-slate-500 mt-1 font-medium">114年結餘</span>
+          </div>
+          <div class="math-symbol font-light text-slate-400">+</div>
+          <div class="flex flex-col items-center">
+            <span id="detailSumDisplay" class="math-val font-bold tabular-nums">0</span>
+            <span class="math-label text-slate-500 mt-1 font-medium">本季收支</span>
+          </div>
+          <div class="math-symbol font-light text-slate-400">=</div>
+          <div class="flex flex-col items-center">
+            <span id="totalAmountDisplay" class="math-val font-bold tabular-nums">216,730</span>
+            <span class="math-label text-slate-500 mt-1 font-medium">現在結餘</span>
+          </div>
+        </div>
+      </div>
+
+      <!-- 列表搜尋與明細區 -->
+      <div class="flex flex-col">
+        <div class="py-4 border-b border-slate-300 flex flex-col sm:flex-row justify-between items-center gap-4 shrink-0">
+          <h2 id="listTitle" class="text-base md:text-lg font-semibold text-slate-800 flex items-center self-start sm:self-auto whitespace-nowrap">
+            載入資料中...
+          </h2>
+          <div class="relative w-full sm:w-64 search-container">
+            <i class="ph ph-magnifying-glass absolute left-3 top-1/2 -translate-y-1/2 text-slate-400"></i>
+            <input 
+              type="text" 
+              id="searchInput"
+              oninput="handleSearch()"
+              placeholder="搜尋項目、內容、描述..." 
+              class="w-full pl-9 pr-3 py-2 bg-white border border-slate-300 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500 transition-shadow"
+            />
+          </div>
+        </div>
         
-        <!-- 🚀 整合式管理面板 (內嵌於網頁，非浮動視窗) -->
-        <div id="adminPanel" class="hidden mb-10 overflow-hidden bg-white border border-indigo-200 rounded-2xl shadow-lg transition-all">
-          <div class="bg-indigo-600 px-4 py-2 flex justify-between items-center">
-            <div class="flex items-center gap-2 text-white text-sm font-bold">
-              <i class="ph ph-shield-check"></i>
-              <span>管理面板</span>
-            </div>
-            <button onclick="toggleAdminPanel()" class="text-indigo-200 hover:text-white"><i class="ph ph-x-circle text-xl"></i></button>
+        <div class="relative no-scrollbar">
+          <div class="hidden md:block overflow-x-hidden">
+            <table class="w-full text-left border-separate table-fixed" style="border-spacing: 0;">
+              <thead>
+                <tr class="text-slate-500 text-sm">
+                  <th class="sticky top-0 z-20 bg-slate-50 h-12 px-4 md:px-6 font-medium whitespace-nowrap shadow-[0_1px_0_#cbd5e1] w-28 md:w-32">日期</th>
+                  <th class="sticky top-0 z-20 bg-slate-50 h-12 px-4 md:px-6 font-medium shadow-[0_1px_0_#cbd5e1]">項目 / 明細</th>
+                  <th class="sticky top-0 z-20 bg-slate-50 h-12 px-4 md:px-6 font-medium text-right whitespace-nowrap shadow-[0_1px_0_#cbd5e1] w-32 md:w-40">金額</th>
+                </tr>
+              </thead>
+              <tbody id="desktopTableBody" class="bg-transparent"></tbody>
+            </table>
           </div>
 
-          <!-- 面板階段 1：密碼解鎖 -->
-          <div id="adminLocked" class="p-6 flex flex-col items-center gap-4">
-            <p class="text-sm text-slate-500 font-medium text-center">本區域受密碼保護，請輸入管理密碼解鎖日期篩選功能</p>
-            <div class="flex w-full max-w-sm gap-2">
-              <input type="password" id="adminPasswordInput" placeholder="請輸入密碼..." class="flex-1 border border-slate-200 rounded-lg px-4 py-2 text-sm outline-none focus:ring-2 focus:ring-indigo-500" />
-              <button onclick="unlockAdmin()" class="bg-indigo-600 text-white px-4 py-2 rounded-lg text-sm font-bold hover:bg-indigo-700 transition-colors">解鎖操作</button>
+          <div class="md:hidden flex flex-col">
+            <div class="sticky top-0 z-20 bg-slate-50 border-b border-slate-200 px-4 h-10 flex items-center justify-between text-[11px] font-bold text-slate-500 uppercase tracking-wider">
+               <div class="w-16 pl-2">日期</div>
+               <div class="flex-1 px-2 text-center">項目 / 明細</div>
+               <div class="w-20 text-right">金額</div>
             </div>
-            <div id="adminAuthError" class="hidden text-rose-500 text-xs font-bold animate-pulse">密碼錯誤，請重新輸入</div>
+            <div id="mobileCardList" class="flex flex-col pb-4"></div>
           </div>
 
-          <!-- 面板階段 2：日期篩選 (解鎖後顯示) -->
-          <div id="adminUnlocked" class="hidden p-6 bg-indigo-50/50">
-            <div class="grid grid-cols-1 sm:grid-cols-2 gap-4">
-              <div class="flex flex-col gap-1">
-                <label class="text-xs text-indigo-600 font-bold ml-1">擷取交易開始日期</label>
-                <select id="startDateSelect" onchange="handleAdminFilterChange()" class="bg-white border border-indigo-200 rounded-lg px-3 py-2 text-sm focus:ring-2 focus:ring-indigo-500 outline-none"></select>
-              </div>
-              <div class="flex flex-col gap-1">
-                <label class="text-xs text-indigo-600 font-bold ml-1">擷取交易結束日期</label>
-                <select id="endDateSelect" onchange="handleAdminFilterChange()" class="bg-white border border-indigo-200 rounded-lg px-3 py-2 text-sm focus:ring-2 focus:ring-indigo-500 outline-none"></select>
-              </div>
-            </div>
-            <div class="mt-4 flex justify-between items-center">
-              <span class="text-[10px] text-indigo-400 italic font-medium">※ 設定後上方算式將重新計算該區間總和</span>
-              <button onclick="resetAdminStatus()" class="text-xs text-indigo-600 hover:underline font-bold">重新鎖定</button>
-            </div>
+          <div id="emptyState" class="hidden py-12 text-center text-slate-500 flex-col items-center justify-center">
+            <i class="ph ph-funnel text-4xl text-slate-300 mb-2"></i>
+            <p>找不到符合條件的記錄</p>
           </div>
         </div>
+      </div>
 
-        <div id="errorBox" class="hidden mb-6 bg-red-50 border-l-4 border-red-500 p-4 rounded-md flex items-start gap-3">
-          <i class="ph ph-warning-circle text-red-500 text-xl shrink-0 mt-0.5"></i>
-          <p id="errorMsg" class="text-red-700 text-sm break-all"></p>
-        </div>
+      <!-- 紙本公告款式署名區 -->
+      <div class="hidden md:flex print:flex w-full justify-between items-end mt-24 mb-4 text-[#000000] signature-area">
+        <img src="https://pub-328fb034a36942da8335503ff2804fc7.r2.dev/RomaFReport.png" alt="報表 QRCode" class="w-28 h-28 object-contain pointer-events-none" />
+        <div class="text-xl font-bold pb-2">主任委員：＿＿＿＿＿</div>
+        <div class="text-xl font-bold pb-2">監察委員：＿＿＿＿＿</div>
+        <div class="text-xl font-bold pb-2">財務委員：＿＿＿＿＿</div>
+      </div>
 
-        <!-- 總覽算式區 -->
-        <div class="mb-12 flex justify-center w-full shrink-0 px-2">
-          <div class="flex items-center gap-2 md:gap-8 math-text whitespace-nowrap">
-            <div class="flex flex-col items-center">
-              <span class="math-val font-bold tabular-nums">216,730</span>
-              <span class="math-label text-slate-500 mt-1 font-medium">114年結餘</span>
-            </div>
-            <div class="math-symbol font-light text-slate-400">+</div>
-            <div class="flex flex-col items-center">
-              <span id="detailSumDisplay" class="math-val font-bold tabular-nums">0</span>
-              <span class="math-label text-slate-500 mt-1 font-medium">本季收支</span>
-            </div>
-            <div class="math-symbol font-light text-slate-400">=</div>
-            <div class="flex flex-col items-center">
-              <span id="totalAmountDisplay" class="math-val font-bold tabular-nums">216,730</span>
-              <span class="math-label text-slate-500 mt-1 font-medium">現在結餘</span>
-            </div>
-          </div>
-        </div>
-
-        <!-- 列表搜尋與明細區 -->
-        <div class="flex flex-col">
-          <div class="py-4 border-b border-slate-300 flex flex-col sm:flex-row justify-between items-center gap-4 shrink-0">
-            <h2 id="listTitle" class="text-base md:text-lg font-semibold text-slate-800 flex items-center self-start sm:self-auto whitespace-nowrap">
-              載入資料中...
-            </h2>
-            <div class="relative w-full sm:w-64 search-container">
-              <i class="ph ph-magnifying-glass absolute left-3 top-1/2 -translate-y-1/2 text-slate-400"></i>
-              <input 
-                type="text" 
-                id="searchInput"
-                oninput="handleSearch()"
-                placeholder="搜尋項目、內容、描述..." 
-                class="w-full pl-9 pr-3 py-2 bg-white border border-slate-300 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500 transition-shadow"
-              />
-            </div>
-          </div>
-          
-          <div class="relative no-scrollbar">
-            <!-- 桌面版 -->
-            <div class="hidden md:block overflow-x-hidden">
-              <table class="w-full text-left border-separate table-fixed" style="border-spacing: 0;">
-                <thead>
-                  <tr class="text-slate-500 text-sm">
-                    <th class="sticky top-0 z-20 bg-slate-50 h-12 px-4 md:px-6 font-medium whitespace-nowrap shadow-[0_1px_0_#cbd5e1] w-28 md:w-32">日期</th>
-                    <th class="sticky top-0 z-20 bg-slate-50 h-12 px-4 md:px-6 font-medium shadow-[0_1px_0_#cbd5e1]">項目 / 明細</th>
-                    <th class="sticky top-0 z-20 bg-slate-50 h-12 px-4 md:px-6 font-medium text-right whitespace-nowrap shadow-[0_1px_0_#cbd5e1] w-32 md:w-40">金額</th>
-                  </tr>
-                </thead>
-                <tbody id="desktopTableBody" class="bg-transparent"></tbody>
-              </table>
-            </div>
-
-            <!-- 手機版 -->
-            <div class="md:hidden flex flex-col">
-              <div class="sticky top-0 z-20 bg-slate-50 border-b border-slate-200 px-4 h-10 flex items-center justify-between text-[11px] font-bold text-slate-500 uppercase tracking-wider">
-                 <div class="w-16 pl-2">日期</div>
-                 <div class="flex-1 px-2 text-center">項目 / 明細</div>
-                 <div class="w-20 text-right">金額</div>
-              </div>
-              <div id="mobileCardList" class="flex flex-col pb-4"></div>
-            </div>
-
-            <div id="emptyState" class="hidden py-12 text-center text-slate-500 flex-col items-center justify-center">
-              <i class="ph ph-funnel text-4xl text-slate-300 mb-2"></i>
-              <p>找不到符合條件的記錄</p>
-            </div>
-          </div>
-        </div>
-
-        <!-- 🚀 紙本公告款式署名區 (僅桌面版顯示，且支援列印強制顯示) -->
-        <div class="hidden md:flex print:flex w-full justify-between items-end mt-24 mb-4 text-[#000000] signature-area">
-          <img src="https://pub-328fb034a36942da8335503ff2804fc7.r2.dev/RomaFReport.png" alt="報表 QRCode" class="w-28 h-28 object-contain pointer-events-none" />
-          <div class="text-xl font-bold pb-2">主任委員：＿＿＿＿</div>
-          <div class="text-xl font-bold pb-2">監察委員：＿＿＿＿</div>
-          <div class="text-xl font-bold pb-2">財務委員：＿＿＿＿</div>
-        </div>
-
-      </main>
-    </div>
+    </main>
   </div>
 
-  <!-- 交易明細燈箱 (Modal) -->
+  <!-- 交易明細燈箱 -->
   <div id="receiptModal" class="fixed inset-0 z-50 flex items-center justify-center bg-slate-900/90 backdrop-blur-sm hidden modal-enter p-0 sm:p-4">
     <div class="bg-white w-full h-full sm:h-auto sm:max-h-[95vh] sm:max-w-4xl sm:rounded-2xl shadow-2xl flex flex-col overflow-hidden" id="modalContentWrapper">
       <div class="shrink-0 flex items-center justify-between px-4 py-3 md:px-6 md:py-4 border-b border-slate-100 bg-white z-50">
@@ -288,25 +269,39 @@
     const SHEET_ID = '1V2tkiYQ5qZFRDJ0mLFPzt6H_8zXDxrtgnoUdrBIm2Ao';
     const SHEET_NAME = 'ALLINDEX';
     const csvUrl = `https://docs.google.com/spreadsheets/d/${SHEET_ID}/gviz/tq?tqx=out:csv&sheet=${SHEET_NAME}`;
+    const configUrl = `https://docs.google.com/spreadsheets/d/${SHEET_ID}/gviz/tq?tqx=out:csv&sheet=CONFIG`;
     const ADMIN_PASSWORD = 'Roma257001008783';
 
-    let expenses = [];
-    let filteredExpenses = []; 
-    let sessionExpenses = []; 
+    // 🚀 全域設定變數
+    let globalStartDate = null;
+    let globalEndDate = null;
+    let reportYear = "115";
+    let reportQuarter = "1";
+
+    let allExpenses = []; // 儲存資料庫撈回的「所有資料」
+    let filteredExpenses = []; // 搜尋後的顯示結果
+    let sessionExpenses = []; // 當前依據日期篩選後的基準資料 (受 CONFIG 或面板控制)
     let expandedGroups = new Set();
     const FIXED_INITIAL_BALANCE = 216730;
     const customGroupOrder = ['管理費收入', '管理費代收支出', '清潔費支出', '零用金', '定存本息', '誤款收支'];
 
-    // 🚀 縮放邏輯實作
-    const zoomWrapper = document.getElementById('zoomWrapper');
-    const scrollContainer = document.getElementById('scrollContainer');
-    let currentScale = 1;
-    let initialDist = 0;
-    let initialScale = 1;
-
-    scrollContainer.addEventListener('touchstart', (e) => { if (e.touches.length === 2) { initialDist = Math.hypot(e.touches[0].pageX - e.touches[1].pageX, e.touches[0].pageY - e.touches[1].pageY); initialScale = currentScale; } });
-    scrollContainer.addEventListener('touchmove', (e) => { if (e.touches.length === 2 && initialDist > 0) { e.preventDefault(); const dist = Math.hypot(e.touches[0].pageX - e.touches[1].pageX, e.touches[0].pageY - e.touches[1].pageY); const zoom = dist / initialDist; currentScale = Math.min(Math.max(initialScale * zoom, 1), 2.5); zoomWrapper.style.transform = `scale(${currentScale})`; } }, { passive: false });
-    scrollContainer.addEventListener('wheel', (e) => { if (e.ctrlKey) { e.preventDefault(); const delta = e.deltaY > 0 ? -0.1 : 0.1; currentScale = Math.min(Math.max(currentScale + delta, 1), 2.5); zoomWrapper.style.transform = `scale(${currentScale})`; } }, { passive: false });
+    // --- 全域資料篩選核心 (依據 CONFIG 設定) ---
+    function getGlobalFilteredExpenses() {
+      let result = allExpenses;
+      if (globalStartDate && !isNaN(globalStartDate.getTime())) {
+        result = result.filter(e => {
+          const d = new Date(e.date);
+          return !isNaN(d.getTime()) && d >= globalStartDate;
+        });
+      }
+      if (globalEndDate && !isNaN(globalEndDate.getTime())) {
+        result = result.filter(e => {
+          const d = new Date(e.date);
+          return !isNaN(d.getTime()) && d <= globalEndDate;
+        });
+      }
+      return result;
+    }
 
     // --- 管理面板核心邏輯 ---
     function toggleAdminPanel() {
@@ -334,24 +329,38 @@
       document.getElementById('adminLocked').classList.remove('hidden');
       document.getElementById('adminUnlocked').classList.add('hidden');
       document.getElementById('adminPasswordInput').value = '';
-      sessionExpenses = [...expenses];
+      
+      // 🚀 重新鎖定時，將資料範圍還原回 CONFIG 的全域設定
+      sessionExpenses = getGlobalFilteredExpenses();
       handleSearch();
     }
 
     function populateDateDropdowns() {
       const startSelect = document.getElementById('startDateSelect');
       const endSelect = document.getElementById('endDateSelect');
-      const uniqueDates = [...new Set(expenses.map(e => e.date))].sort((a, b) => new Date(a) - new Date(b));
+      
+      // 🚀 選單選項必須列出資料庫所有的日期 (allExpenses)，讓管理員有權選取 CONFIG 以外的日子
+      const uniqueDates = [...new Set(allExpenses.map(e => e.date))].sort((a, b) => new Date(a) - new Date(b));
       
       startSelect.innerHTML = uniqueDates.map(d => `<option value="${d}">${d}</option>`).join('');
       endSelect.innerHTML = uniqueDates.map(d => `<option value="${d}">${d}</option>`).join('');
-      endSelect.value = uniqueDates[uniqueDates.length - 1];
+      
+      // 自動停留在目前畫面正在顯示的區間
+      if (sessionExpenses.length > 0) {
+        const cur = sessionExpenses.map(e => e.date).sort((a, b) => new Date(a) - new Date(b));
+        startSelect.value = cur[0];
+        endSelect.value = cur[cur.length - 1];
+      } else {
+        endSelect.value = uniqueDates[uniqueDates.length - 1];
+      }
     }
 
     function handleAdminFilterChange() {
       const start = new Date(document.getElementById('startDateSelect').value);
       const end = new Date(document.getElementById('endDateSelect').value);
-      sessionExpenses = expenses.filter(e => {
+      
+      // 管理員手動篩選時，從 allExpenses (總資料) 中撈取，覆蓋全域設定
+      sessionExpenses = allExpenses.filter(e => {
         const d = new Date(e.date);
         return d >= start && d <= end;
       });
@@ -375,7 +384,7 @@
     }
 
     function openModal(id) {
-      const exp = expenses.find(e => e.id === id);
+      const exp = allExpenses.find(e => e.id === id);
       if (!exp) return;
       document.getElementById('modalMainTitle').textContent = `交易明細 - ${exp.content || '未分類'}`;
       document.getElementById('modalSubtitle').textContent = exp.description || '無描述';
@@ -466,6 +475,13 @@
       renderLists();
     }
 
+    // CSV 安全取值函式
+    const getCell = (lines, rowIndex, colIndex) => {
+      if (lines.length <= rowIndex) return null;
+      const v = lines[rowIndex].split(/,(?=(?:(?:[^"]*"){2})*[^"]*$)/).map(v => v.trim().replace(/^"|"$/g, '').replace(/\u00a0/g, ' '));
+      return v[colIndex] || null;
+    };
+
     function parseCSV(csvText) {
       const lines = csvText.split(/\r?\n/).slice(1).filter(l => l.trim() !== '');
       return lines.map((l, i) => {
@@ -478,7 +494,7 @@
       }).filter(item => {
         const y4 = item.date.match(/(\d{4})/), y3 = item.date.match(/(11\d)/);
         let year = y4 ? parseInt(y4[0]) : (y3 ? parseInt(y3[0]) + 1911 : 0);
-        return year >= 2026 && (item.date || item.amount !== 0);
+        return year >= 2026 && (item.date || item.amount !== 0); // 排除 2026 以前或無效資料
       });
     }
 
@@ -486,15 +502,51 @@
       const syncBtn = document.getElementById('syncBtn');
       const syncIcon = document.getElementById('syncIcon');
       syncBtn.disabled = true; syncIcon.className = 'ph ph-arrows-clockwise animate-spin text-2xl md:text-3xl';
+      
       try {
+        // 🚀 Step 1: 讀取 CONFIG 全域設定
+        try {
+          const cUrl = `${configUrl}&t=${Date.now()}`;
+          const cRes = await fetch(cUrl).catch(() => fetch(`https://api.allorigins.win/raw?url=${encodeURIComponent(cUrl)}`));
+          
+          if (cRes && cRes.ok) {
+            const cTxt = await cRes.text();
+            const configLines = cTxt.split(/\r?\n/).filter(l => l.trim() !== '');
+            
+            // 擷取第二列與第三列的設定值
+            const a2 = getCell(configLines, 1, 0); // CONFIG!A2 (開始日期)
+            const b2 = getCell(configLines, 1, 1); // CONFIG!B2 (年份)
+            const c2 = getCell(configLines, 1, 2); // CONFIG!C2 (季別)
+            const a3 = getCell(configLines, 2, 0); // CONFIG!A3 (結束日期)
+            
+            if (a2) globalStartDate = new Date(a2);
+            if (a3) globalEndDate = new Date(a3);
+            if (b2) reportYear = b2;
+            if (c2) reportQuarter = c2;
+          }
+        } catch (configErr) {
+          console.warn('無法讀取 CONFIG 設定，將使用預設值。', configErr);
+        }
+
+        // 🚀 動態更新標題文字
+        const titleText = `民國${reportYear}年度第${reportQuarter}季 羅馬假期財務報表`;
+        document.title = titleText;
+        document.getElementById('mainTitle').innerHTML = `民國${reportYear}年度第${reportQuarter}季 <span class="admin-trigger text-indigo-800" onclick="toggleAdminPanel()">羅馬假期</span>財務報表`;
+
+        // 🚀 Step 2: 讀取 ALLINDEX 明細資料
         const fUrl = `${csvUrl}&t=${Date.now()}`;
         let res = await fetch(fUrl).catch(() => fetch(`https://api.allorigins.win/raw?url=${encodeURIComponent(fUrl)}`));
+        if (!res.ok) throw new Error(`HTTP 錯誤 ${res.status}`);
+        
         const txt = await res.text();
-        expenses = parseCSV(txt);
-        sessionExpenses = [...expenses];
+        allExpenses = parseCSV(txt);
+        
+        // 將資料透過 CONFIG 的區間過濾，設定為預設顯示範圍
+        sessionExpenses = getGlobalFilteredExpenses();
         handleSearch();
+        
       } catch (err) {
-        document.getElementById('errorMsg').textContent = '同步失敗: ' + err.message;
+        document.getElementById('errorMsg').textContent = '同步資料失敗: ' + err.message;
         document.getElementById('errorBox').classList.remove('hidden');
       } finally {
         syncBtn.disabled = false; syncIcon.className = 'ph ph-arrows-clockwise text-2xl md:text-3xl';
