@@ -5,20 +5,15 @@
   <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
   <title>民國115年度第1季 羅馬假期財務報表</title>
   
-  <!-- 載入 Tailwind CSS (CDN) -->
   <script src="https://cdn.tailwindcss.com"></script>
-  
-  <!-- 載入 Phosphor Icons (CDN) -->
   <script src="https://unpkg.com/@phosphor-icons/web"></script>
 
-  <!-- 自訂過渡動畫與隱藏捲軸樣式 -->
   <style>
     .modal-enter { opacity: 0; transform: scale(0.95); }
     .modal-enter-active { opacity: 1; transform: scale(1); transition: all 0.2s ease-out; }
     .modal-exit { opacity: 1; transform: scale(1); }
     .modal-exit-active { opacity: 0; transform: scale(0.95); transition: all 0.2s ease-in; }
     
-    /* 隱藏外觀捲軸但保持可捲動 */
     .no-scrollbar::-webkit-scrollbar { display: none; }
     .no-scrollbar { -ms-overflow-style: none; scrollbar-width: none; }
     
@@ -30,23 +25,21 @@
       text-overflow: ellipsis;
     }
 
-    /* 🚀 標題隨螢幕寬度縮放，確保不換行 */
+    /* 🚀 標題與算式彈性縮放 */
     .responsive-title {
-      font-size: clamp(1rem, 4vw, 1.5rem);
+      font-size: clamp(1rem, 4.5vw, 1.5rem);
       white-space: nowrap;
     }
+    .math-val { font-size: clamp(1.2rem, 6vw, 2.5rem); }
+    .math-symbol { font-size: clamp(1rem, 4vw, 2rem); }
+    .math-label { font-size: clamp(0.6rem, 2.5vw, 0.875rem); }
 
-    /* 防止圖片被選取 */
     .no-select {
       -webkit-touch-callout: none;
       -webkit-user-select: none;
-      -khtml-user-select: none;
-      -moz-user-select: none;
-      -ms-user-select: none;
       user-select: none;
     }
 
-    /* 圖片保護層 */
     .img-overlay {
       position: absolute;
       top: 0;
@@ -56,17 +49,32 @@
       z-index: 10;
       background: rgba(0,0,0,0);
     }
+
+    #zoomWrapper {
+      transform-origin: top center;
+      transition: transform 0.1s ease-out;
+      will-change: transform;
+    }
+
+    /* 管理者觸發字樣 */
+    .admin-trigger {
+      cursor: pointer;
+      user-select: none;
+    }
   </style>
 </head>
 <body class="bg-slate-50 text-slate-800 font-sans h-screen flex flex-col overflow-hidden">
 
   <!-- 頂部導航 -->
-  <header class="bg-white shadow-sm border-b border-slate-200 z-30 shrink-0">
+  <header class="bg-white shadow-sm border-b border-slate-200 z-40 shrink-0">
     <div class="max-w-6xl mx-auto px-4 py-4 flex items-center justify-center gap-2 flex-nowrap">
-      <h1 class="font-bold text-slate-800 tracking-tight responsive-title">民國115年度第1季 羅馬假期財務報表</h1>
+      <h1 class="font-bold text-slate-800 tracking-tight responsive-title">
+        民國115年度第1季 <span class="admin-trigger" onclick="toggleAdminPanel()">羅馬假期</span>財務報表
+      </h1>
       
       <button 
         id="syncBtn"
+        onclick="handleLoadData()"
         title="同步最新資料"
         class="text-indigo-600 hover:text-indigo-800 transition-colors p-1 flex items-center justify-center disabled:text-indigo-300 shrink-0"
       >
@@ -76,98 +84,146 @@
   </header>
 
   <!-- 主要內容區 -->
-  <div class="flex-1 overflow-y-auto no-scrollbar pb-10">
-    <main class="max-w-6xl mx-auto px-4 py-10">
-      
-      <div id="errorBox" class="hidden mb-6 bg-red-50 border-l-4 border-red-500 p-4 rounded-md flex items-start gap-3">
-        <i class="ph ph-warning-circle text-red-500 text-xl shrink-0 mt-0.5"></i>
-        <p id="errorMsg" class="text-red-700 text-sm break-all"></p>
-      </div>
-
-      <!-- 總覽算式區 -->
-      <div class="mb-12 flex justify-center w-full shrink-0 px-2">
-        <div class="flex items-start gap-3 md:gap-8 math-text">
-          <div class="flex flex-col items-center">
-            <span class="text-2xl md:text-4xl font-bold tabular-nums">216,730</span>
-            <span class="text-[10px] md:text-sm text-slate-500 mt-2 font-medium">114年結餘</span>
-          </div>
-          <div class="pt-1 md:pt-2 text-xl md:text-3xl font-light text-slate-400">+</div>
-          <div class="flex flex-col items-center">
-            <span id="detailSumDisplay" class="text-2xl md:text-4xl font-bold tabular-nums">0</span>
-            <span class="text-[10px] md:text-sm text-slate-500 mt-2 font-medium">本季收支</span>
-          </div>
-          <div class="pt-1 md:pt-2 text-xl md:text-3xl font-light text-slate-400">=</div>
-          <div class="flex flex-col items-center">
-            <span id="totalAmountDisplay" class="text-2xl md:text-4xl font-bold tabular-nums">216,730</span>
-            <span class="text-[10px] md:text-sm text-slate-500 mt-2 font-medium">現在結餘</span>
-          </div>
-        </div>
-      </div>
-
-      <!-- 列表搜尋與明細區 -->
-      <div class="flex flex-col max-h-[800px] h-[65vh]">
-        <div class="py-4 border-b border-slate-300 flex flex-col sm:flex-row justify-between items-center gap-4 shrink-0 z-30">
-          <h2 id="listTitle" class="text-base md:text-lg font-semibold text-slate-800 flex items-center self-start sm:self-auto whitespace-nowrap">
-            載入資料中...
-          </h2>
-          <div class="relative w-full sm:w-64">
-            <i class="ph ph-magnifying-glass absolute left-3 top-1/2 -translate-y-1/2 text-slate-400"></i>
-            <input 
-              type="text" 
-              id="searchInput"
-              placeholder="搜尋項目、內容、描述..." 
-              class="w-full pl-9 pr-3 py-2 bg-white border border-slate-300 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500 transition-shadow"
-            />
-          </div>
-        </div>
+  <div class="flex-1 overflow-y-auto no-scrollbar pb-10" id="scrollContainer">
+    <div id="zoomWrapper">
+      <main class="max-w-6xl mx-auto px-4 py-8">
         
-        <div class="flex-1 overflow-y-auto relative no-scrollbar">
-          <div class="hidden md:block">
-            <table class="w-full text-left border-separate table-fixed" style="border-spacing: 0;">
-              <thead>
-                <tr class="text-slate-500 text-sm">
-                  <th class="sticky top-0 z-20 bg-slate-50 h-12 px-4 md:px-6 font-medium whitespace-nowrap shadow-[0_1px_0_#cbd5e1] w-28 md:w-32">日期</th>
-                  <th class="sticky top-0 z-20 bg-slate-50 h-12 px-4 md:px-6 font-medium shadow-[0_1px_0_#cbd5e1]">項目 / 明細</th>
-                  <th class="sticky top-0 z-20 bg-slate-50 h-12 px-4 md:px-6 font-medium text-right whitespace-nowrap shadow-[0_1px_0_#cbd5e1] w-32 md:w-40">金額</th>
-                </tr>
-              </thead>
-              <tbody id="desktopTableBody" class="bg-transparent"></tbody>
-            </table>
-          </div>
-
-          <div class="md:hidden flex flex-col">
-            <div class="sticky top-0 z-20 bg-slate-50 border-b border-slate-200 px-4 h-10 flex items-center justify-between text-[11px] font-bold text-slate-500 uppercase tracking-wider">
-               <div class="w-16 pl-2">日期</div>
-               <div class="flex-1 px-2 text-center">項目 / 明細</div>
-               <div class="w-20 text-right">金額</div>
+        <!-- 🚀 整合式管理面板 (內嵌於網頁，非浮動視窗) -->
+        <div id="adminPanel" class="hidden mb-10 overflow-hidden bg-white border border-indigo-200 rounded-2xl shadow-lg transition-all">
+          <div class="bg-indigo-600 px-4 py-2 flex justify-between items-center">
+            <div class="flex items-center gap-2 text-white text-sm font-bold">
+              <i class="ph ph-shield-check"></i>
+              <span>管理面板</span>
             </div>
-            <div id="mobileCardList" class="flex flex-col pb-4"></div>
+            <button onclick="toggleAdminPanel()" class="text-indigo-200 hover:text-white"><i class="ph ph-x-circle text-xl"></i></button>
           </div>
 
-          <div id="emptyState" class="hidden py-12 text-center text-slate-500 h-full flex-col items-center justify-center">
-            <i class="ph ph-funnel text-4xl text-slate-300 mb-2"></i>
-            <p>找不到符合條件的記錄</p>
+          <!-- 面板階段 1：密碼解鎖 -->
+          <div id="adminLocked" class="p-6 flex flex-col items-center gap-4">
+            <p class="text-sm text-slate-500 font-medium text-center">本區域受密碼保護，請輸入管理密碼解鎖日期篩選功能</p>
+            <div class="flex w-full max-w-sm gap-2">
+              <input type="password" id="adminPasswordInput" placeholder="請輸入密碼..." class="flex-1 border border-slate-200 rounded-lg px-4 py-2 text-sm outline-none focus:ring-2 focus:ring-indigo-500" />
+              <button onclick="unlockAdmin()" class="bg-indigo-600 text-white px-4 py-2 rounded-lg text-sm font-bold hover:bg-indigo-700 transition-colors">解鎖操作</button>
+            </div>
+            <div id="adminAuthError" class="hidden text-rose-500 text-xs font-bold animate-pulse">密碼錯誤，請重新輸入</div>
+          </div>
+
+          <!-- 面板階段 2：日期篩選 (解鎖後顯示) -->
+          <div id="adminUnlocked" class="hidden p-6 bg-indigo-50/50">
+            <div class="grid grid-cols-1 sm:grid-cols-2 gap-4">
+              <div class="flex flex-col gap-1">
+                <label class="text-xs text-indigo-600 font-bold ml-1">擷取交易開始日期</label>
+                <select id="startDateSelect" onchange="handleAdminFilterChange()" class="bg-white border border-indigo-200 rounded-lg px-3 py-2 text-sm focus:ring-2 focus:ring-indigo-500 outline-none"></select>
+              </div>
+              <div class="flex flex-col gap-1">
+                <label class="text-xs text-indigo-600 font-bold ml-1">擷取交易結束日期</label>
+                <select id="endDateSelect" onchange="handleAdminFilterChange()" class="bg-white border border-indigo-200 rounded-lg px-3 py-2 text-sm focus:ring-2 focus:ring-indigo-500 outline-none"></select>
+              </div>
+            </div>
+            <div class="mt-4 flex justify-between items-center">
+              <span class="text-[10px] text-indigo-400 italic font-medium">※ 設定後上方算式將重新計算該區間總和</span>
+              <button onclick="resetAdminStatus()" class="text-xs text-indigo-600 hover:underline font-bold">重新鎖定</button>
+            </div>
           </div>
         </div>
-      </div>
-    </main>
+
+        <div id="errorBox" class="hidden mb-6 bg-red-50 border-l-4 border-red-500 p-4 rounded-md flex items-start gap-3">
+          <i class="ph ph-warning-circle text-red-500 text-xl shrink-0 mt-0.5"></i>
+          <p id="errorMsg" class="text-red-700 text-sm break-all"></p>
+        </div>
+
+        <!-- 總覽算式區 -->
+        <div class="mb-12 flex justify-center w-full shrink-0 px-2">
+          <div class="flex items-center gap-2 md:gap-8 math-text whitespace-nowrap">
+            <div class="flex flex-col items-center">
+              <span class="math-val font-bold tabular-nums">216,730</span>
+              <span class="math-label text-slate-500 mt-1 font-medium">114年結餘</span>
+            </div>
+            <div class="math-symbol font-light text-slate-400">+</div>
+            <div class="flex flex-col items-center">
+              <span id="detailSumDisplay" class="math-val font-bold tabular-nums">0</span>
+              <span class="math-label text-slate-500 mt-1 font-medium">本季收支</span>
+            </div>
+            <div class="math-symbol font-light text-slate-400">=</div>
+            <div class="flex flex-col items-center">
+              <span id="totalAmountDisplay" class="math-val font-bold tabular-nums">216,730</span>
+              <span class="math-label text-slate-500 mt-1 font-medium">現在結餘</span>
+            </div>
+          </div>
+        </div>
+
+        <!-- 列表搜尋與明細區 -->
+        <div class="flex flex-col">
+          <div class="py-4 border-b border-slate-300 flex flex-col sm:flex-row justify-between items-center gap-4 shrink-0">
+            <h2 id="listTitle" class="text-base md:text-lg font-semibold text-slate-800 flex items-center self-start sm:self-auto whitespace-nowrap">
+              載入資料中...
+            </h2>
+            <div class="relative w-full sm:w-64">
+              <i class="ph ph-magnifying-glass absolute left-3 top-1/2 -translate-y-1/2 text-slate-400"></i>
+              <input 
+                type="text" 
+                id="searchInput"
+                oninput="handleSearch()"
+                placeholder="搜尋項目、內容、描述..." 
+                class="w-full pl-9 pr-3 py-2 bg-white border border-slate-300 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500 transition-shadow"
+              />
+            </div>
+          </div>
+          
+          <div class="relative no-scrollbar">
+            <!-- 桌面版 -->
+            <div class="hidden md:block overflow-x-hidden">
+              <table class="w-full text-left border-separate table-fixed" style="border-spacing: 0;">
+                <thead>
+                  <tr class="text-slate-500 text-sm">
+                    <th class="sticky top-0 z-20 bg-slate-50 h-12 px-4 md:px-6 font-medium whitespace-nowrap shadow-[0_1px_0_#cbd5e1] w-28 md:w-32">日期</th>
+                    <th class="sticky top-0 z-20 bg-slate-50 h-12 px-4 md:px-6 font-medium shadow-[0_1px_0_#cbd5e1]">項目 / 明細</th>
+                    <th class="sticky top-0 z-20 bg-slate-50 h-12 px-4 md:px-6 font-medium text-right whitespace-nowrap shadow-[0_1px_0_#cbd5e1] w-32 md:w-40">金額</th>
+                  </tr>
+                </thead>
+                <tbody id="desktopTableBody" class="bg-transparent"></tbody>
+              </table>
+            </div>
+
+            <!-- 手機版 -->
+            <div class="md:hidden flex flex-col">
+              <div class="sticky top-0 z-20 bg-slate-50 border-b border-slate-200 px-4 h-10 flex items-center justify-between text-[11px] font-bold text-slate-500 uppercase tracking-wider">
+                 <div class="w-16 pl-2">日期</div>
+                 <div class="flex-1 px-2 text-center">項目 / 明細</div>
+                 <div class="w-20 text-right">金額</div>
+              </div>
+              <div id="mobileCardList" class="flex flex-col pb-4"></div>
+            </div>
+
+            <div id="emptyState" class="hidden py-12 text-center text-slate-500 flex-col items-center justify-center">
+              <i class="ph ph-funnel text-4xl text-slate-300 mb-2"></i>
+              <p>找不到符合條件的記錄</p>
+            </div>
+          </div>
+        </div>
+
+        <!-- 🚀 紙本公告款式署名區 (僅桌面版顯示) -->
+        <div class="hidden md:flex w-full justify-between items-end mt-24 mb-4 text-[#000000]">
+          <img src="https://pub-328fb034a36942da8335503ff2804fc7.r2.dev/RomaFReport.png" alt="報表 QRCode" class="w-28 h-28 object-contain pointer-events-none" />
+          <div class="text-xl font-bold pb-2">主任委員：＿＿＿＿＿</div>
+          <div class="text-xl font-bold pb-2">監察委員：＿＿＿＿＿</div>
+          <div class="text-xl font-bold pb-2">財務委員：＿＿＿＿＿</div>
+        </div>
+
+      </main>
+    </div>
   </div>
 
-  <!-- 交易明細燈箱 (Modal) - 🚀 結構調整為固定頭部與可捲動內容 -->
+  <!-- 交易明細燈箱 (Modal) -->
   <div id="receiptModal" class="fixed inset-0 z-50 flex items-center justify-center bg-slate-900/90 backdrop-blur-sm hidden modal-enter p-0 sm:p-4">
     <div class="bg-white w-full h-full sm:h-auto sm:max-h-[95vh] sm:max-w-4xl sm:rounded-2xl shadow-2xl flex flex-col overflow-hidden" id="modalContentWrapper">
-      
-      <!-- 固定標題欄 (Sticky Header) -->
       <div class="shrink-0 flex items-center justify-between px-4 py-3 md:px-6 md:py-4 border-b border-slate-100 bg-white z-50">
         <div><h3 id="modalMainTitle" class="text-base md:text-lg font-bold text-slate-800">交易明細</h3></div>
-        <button id="closeModalBtn" class="p-2 text-slate-400 hover:text-slate-600 hover:bg-slate-100 rounded-full transition-colors focus:outline-none bg-slate-50 shrink-0">
+        <button onclick="closeModal()" class="p-2 text-slate-400 hover:text-slate-600 hover:bg-slate-100 rounded-full transition-colors focus:outline-none bg-slate-50 shrink-0">
           <i class="ph ph-x text-2xl"></i>
         </button>
       </div>
-
-      <!-- 可捲動內容區 (Scrollable Content) -->
       <div class="flex-1 overflow-y-auto no-scrollbar">
-        <!-- 文字資訊 -->
         <div class="px-4 py-6 md:px-8 md:py-8 bg-white">
           <div class="flex justify-between items-start gap-4 mb-4">
             <h4 id="modalCategory" class="text-2xl md:text-4xl font-bold text-slate-800 break-words flex-1"></h4>
@@ -178,39 +234,13 @@
             <span id="modalSubtitle" class="text-base md:text-lg font-medium"></span>
           </div>
         </div>
-        
-        <!-- 圖片容器 - 🚀 全寬顯示並加入防盜圖層 -->
         <div id="modalImageContainer" class="bg-slate-100 flex flex-col items-center justify-start relative hidden no-select">
-          <!-- 透明保護層 -->
           <div class="img-overlay"></div>
-          
-          <img 
-            id="modalImage" 
-            src="" 
-            alt="單據圖片" 
-            class="w-full h-auto object-contain pointer-events-none"
-            oncontextmenu="return false;"
-            ondragstart="return false;"
-          />
-          
-          <div id="modalLoading" class="py-20 flex flex-col items-center justify-center text-slate-400 gap-3">
-            <i class="ph ph-spinner-gap animate-spin text-4xl text-indigo-400"></i>
-            <p class="text-sm">單據載入中...</p>
-          </div>
-
-          <div id="modalError" class="hidden py-20 flex flex-col items-center justify-center text-slate-400 gap-3 w-full text-center px-4">
-            <i class="ph ph-image-broken text-5xl text-slate-300"></i>
-            <p class="text-sm">無法顯示圖片。可能是連結失效或格式不支援。</p>
-            <a id="modalExternalLink" href="#" target="_blank" class="text-sm text-indigo-600 hover:underline mt-2 bg-white px-4 py-2 rounded-full shadow-sm border border-slate-200 pointer-events-auto">
-              在新分頁開啟原始單據
-            </a>
-          </div>
+          <img id="modalImage" src="" alt="單據圖片" class="w-full h-auto object-contain pointer-events-none" oncontextmenu="return false;" ondragstart="return false;" />
+          <div id="modalLoading" class="py-20 flex flex-col items-center justify-center text-slate-400 gap-3"><i class="ph ph-spinner-gap animate-spin text-4xl text-indigo-400"></i><p class="text-sm">單據載入中...</p></div>
+          <div id="modalError" class="hidden py-20 flex flex-col items-center justify-center text-slate-400 gap-3 w-full text-center px-4"><i class="ph ph-image-broken text-5xl text-slate-300"></i><p class="text-sm">無法顯示圖片。</p></div>
         </div>
-        
-        <!-- 安全提示底部 -->
-        <div class="p-6 text-center text-slate-400 text-xs bg-white border-t border-slate-50 italic">
-          — 財務明細僅供閱覽，單據版權所有 —
-        </div>
+        <div class="p-6 text-center text-slate-400 text-xs bg-white border-t border-slate-50 italic">— 財務明細僅供閱覽，單據版權所有 —</div>
       </div>
     </div>
   </div>
@@ -219,48 +249,84 @@
     const SHEET_ID = '1V2tkiYQ5qZFRDJ0mLFPzt6H_8zXDxrtgnoUdrBIm2Ao';
     const SHEET_NAME = 'ALLINDEX';
     const csvUrl = `https://docs.google.com/spreadsheets/d/${SHEET_ID}/gviz/tq?tqx=out:csv&sheet=${SHEET_NAME}`;
+    const ADMIN_PASSWORD = 'Roma257001008783';
 
     let expenses = [];
-    let filteredExpenses = [];
+    let filteredExpenses = []; 
+    let sessionExpenses = []; 
     let expandedGroups = new Set();
     const FIXED_INITIAL_BALANCE = 216730;
-
     const customGroupOrder = ['管理費收入', '管理費代收支出', '清潔費支出', '零用金', '定存本息', '誤款收支'];
 
-    const searchInput = document.getElementById('searchInput');
-    const syncBtn = document.getElementById('syncBtn');
-    const syncIcon = document.getElementById('syncIcon');
-    const errorBox = document.getElementById('errorBox');
-    const errorMsg = document.getElementById('errorMsg');
-    const desktopTableBody = document.getElementById('desktopTableBody');
-    const mobileCardList = document.getElementById('mobileCardList');
-    const emptyState = document.getElementById('emptyState');
-    const listTitle = document.getElementById('listTitle');
-    const detailSumDisplay = document.getElementById('detailSumDisplay');
-    const totalAmountDisplay = document.getElementById('totalAmountDisplay');
+    // 🚀 縮放邏輯實作
+    const zoomWrapper = document.getElementById('zoomWrapper');
+    const scrollContainer = document.getElementById('scrollContainer');
+    let currentScale = 1;
+    let initialDist = 0;
+    let initialScale = 1;
 
-    const modal = document.getElementById('receiptModal');
-    const modalContentWrapper = document.getElementById('modalContentWrapper');
-    const modalSubtitle = document.getElementById('modalSubtitle');
-    const modalDate = document.getElementById('modalDate');
-    const modalCategory = document.getElementById('modalCategory');
-    const modalAmount = document.getElementById('modalAmount');
-    const closeModalBtn = document.getElementById('closeModalBtn');
-    const modalMainTitle = document.getElementById('modalMainTitle');
-    const modalImageContainer = document.getElementById('modalImageContainer');
-    const modalLoading = document.getElementById('modalLoading');
-    const modalError = document.getElementById('modalError');
-    const modalExternalLink = document.getElementById('modalExternalLink');
-    const modalImage = document.getElementById('modalImage');
+    scrollContainer.addEventListener('touchstart', (e) => { if (e.touches.length === 2) { initialDist = Math.hypot(e.touches[0].pageX - e.touches[1].pageX, e.touches[0].pageY - e.touches[1].pageY); initialScale = currentScale; } });
+    scrollContainer.addEventListener('touchmove', (e) => { if (e.touches.length === 2 && initialDist > 0) { e.preventDefault(); const dist = Math.hypot(e.touches[0].pageX - e.touches[1].pageX, e.touches[0].pageY - e.touches[1].pageY); const zoom = dist / initialDist; currentScale = Math.min(Math.max(initialScale * zoom, 1), 2.5); zoomWrapper.style.transform = `scale(${currentScale})`; } }, { passive: false });
+    scrollContainer.addEventListener('wheel', (e) => { if (e.ctrlKey) { e.preventDefault(); const delta = e.deltaY > 0 ? -0.1 : 0.1; currentScale = Math.min(Math.max(currentScale + delta, 1), 2.5); zoomWrapper.style.transform = `scale(${currentScale})`; } }, { passive: false });
 
+    // --- 管理面板核心邏輯 ---
+    function toggleAdminPanel() {
+      const panel = document.getElementById('adminPanel');
+      panel.classList.toggle('hidden');
+      if (!panel.classList.contains('hidden')) {
+        document.getElementById('adminPasswordInput').focus();
+      }
+    }
+
+    function unlockAdmin() {
+      const input = document.getElementById('adminPasswordInput');
+      const error = document.getElementById('adminAuthError');
+      if (input.value === ADMIN_PASSWORD) {
+        document.getElementById('adminLocked').classList.add('hidden');
+        document.getElementById('adminUnlocked').classList.remove('hidden');
+        error.classList.add('hidden');
+        populateDateDropdowns();
+      } else {
+        error.classList.remove('hidden');
+      }
+    }
+
+    function resetAdminStatus() {
+      document.getElementById('adminLocked').classList.remove('hidden');
+      document.getElementById('adminUnlocked').classList.add('hidden');
+      document.getElementById('adminPasswordInput').value = '';
+      sessionExpenses = [...expenses];
+      handleSearch();
+    }
+
+    function populateDateDropdowns() {
+      const startSelect = document.getElementById('startDateSelect');
+      const endSelect = document.getElementById('endDateSelect');
+      const uniqueDates = [...new Set(expenses.map(e => e.date))].sort((a, b) => new Date(a) - new Date(b));
+      
+      startSelect.innerHTML = uniqueDates.map(d => `<option value="${d}">${d}</option>`).join('');
+      endSelect.innerHTML = uniqueDates.map(d => `<option value="${d}">${d}</option>`).join('');
+      endSelect.value = uniqueDates[uniqueDates.length - 1];
+    }
+
+    function handleAdminFilterChange() {
+      const start = new Date(document.getElementById('startDateSelect').value);
+      const end = new Date(document.getElementById('endDateSelect').value);
+      sessionExpenses = expenses.filter(e => {
+        const d = new Date(e.date);
+        return d >= start && d <= end;
+      });
+      handleSearch();
+    }
+
+    // --- 資料載入與渲染邏輯 ---
     const formatMoney = (amount) => Number(amount).toLocaleString('zh-TW');
 
     function updateStats() {
-      const absoluteDetailSum = expenses.reduce((sum, item) => sum + (Number(item.amount) || 0), 0);
-      const total = FIXED_INITIAL_BALANCE + absoluteDetailSum;
-      detailSumDisplay.textContent = formatMoney(absoluteDetailSum);
-      totalAmountDisplay.textContent = formatMoney(total);
-      listTitle.innerHTML = `<i class="ph ph-list-dashes text-slate-500 text-xl mr-2"></i>本季收支 <span class="mx-1 text-indigo-600 font-bold">${formatMoney(absoluteDetailSum)}</span> 元，明細共 <span class="mx-1 text-indigo-600 font-bold">${filteredExpenses.length}</span> 筆`;
+      const absoluteSum = sessionExpenses.reduce((sum, item) => sum + (Number(item.amount) || 0), 0);
+      document.getElementById('detailSumDisplay').textContent = formatMoney(absoluteSum);
+      document.getElementById('totalAmountDisplay').textContent = formatMoney(FIXED_INITIAL_BALANCE + absoluteSum);
+      document.getElementById('listTitle').innerHTML = `<i class="ph ph-list-dashes text-slate-500 mr-2"></i>本季收支 <span class="text-indigo-600 font-bold">${formatMoney(absoluteSum)}</span> 元，明細共 <span class="text-indigo-600 font-bold">${filteredExpenses.length}</span> 筆`;
     }
 
     function toggleGroup(groupName) {
@@ -270,189 +336,134 @@
     }
 
     function openModal(id) {
-      const expense = expenses.find(e => e.id === id);
-      if (!expense) return;
-      
-      modalMainTitle.textContent = `交易明細 - ${expense.content || '未分類項目'}`;
-      modalSubtitle.textContent = expense.description || '無描述';
-      modalCategory.textContent = expense.category || '未分類';
-      modalDate.innerHTML = `<i class="ph ph-calendar-blank"></i> ${expense.date || '-'}`;
-      modalAmount.textContent = formatMoney(expense.amount);
-      modalAmount.className = `text-2xl md:text-4xl font-bold tabular-nums text-right shrink-0 ${expense.amount < 0 ? 'text-rose-600' : 'text-emerald-600'}`;
-      
-      modalImage.classList.add('hidden');
-      modalError.classList.add('hidden');
-      modalLoading.classList.add('hidden');
-      
-      if (expense.receiptUrl && expense.receiptUrl.trim() !== '') {
-        modalImageContainer.classList.remove('hidden');
-        modalLoading.classList.remove('hidden');
-        modalImage.src = expense.receiptUrl;
-        modalExternalLink.href = expense.receiptUrl;
+      const exp = expenses.find(e => e.id === id);
+      if (!exp) return;
+      document.getElementById('modalMainTitle').textContent = `交易明細 - ${exp.content || '未分類'}`;
+      document.getElementById('modalSubtitle').textContent = exp.description || '無描述';
+      document.getElementById('modalCategory').textContent = exp.category || '未分類';
+      document.getElementById('modalDate').innerHTML = `<i class="ph ph-calendar-blank"></i> ${exp.date || '-'}`;
+      const mAmount = document.getElementById('modalAmount');
+      mAmount.textContent = formatMoney(exp.amount);
+      mAmount.className = `text-2xl md:text-4xl font-bold tabular-nums text-right ${exp.amount < 0 ? 'text-rose-600' : 'text-emerald-600'}`;
+      document.getElementById('modalImage').classList.add('hidden');
+      document.getElementById('modalError').classList.add('hidden');
+      document.getElementById('modalLoading').classList.add('hidden');
+      if (exp.receiptUrl && exp.receiptUrl.trim() !== '') {
+        document.getElementById('modalImageContainer').classList.remove('hidden');
+        document.getElementById('modalLoading').classList.remove('hidden');
+        document.getElementById('modalImage').src = exp.receiptUrl;
       } else {
-        modalImageContainer.classList.add('hidden');
+        document.getElementById('modalImageContainer').classList.add('hidden');
       }
-      
-      modal.classList.remove('hidden');
-      setTimeout(() => { modal.classList.remove('modal-enter'); modal.classList.add('modal-enter-active'); }, 10);
+      document.getElementById('receiptModal').classList.remove('hidden');
+      setTimeout(() => { document.getElementById('receiptModal').classList.add('modal-enter-active'); }, 10);
     }
 
     function closeModal() {
-      modal.classList.remove('modal-enter-active');
-      modal.classList.add('modal-exit-active');
-      setTimeout(() => { modal.classList.add('hidden'); modal.classList.remove('modal-exit-active'); modalImage.src = ''; }, 200);
+      document.getElementById('receiptModal').classList.remove('modal-enter-active');
+      document.getElementById('receiptModal').classList.add('modal-exit-active');
+      setTimeout(() => { document.getElementById('receiptModal').classList.add('hidden'); document.getElementById('receiptModal').classList.remove('modal-exit-active'); document.getElementById('modalImage').src = ''; }, 200);
     }
 
     function renderLists() {
-      desktopTableBody.innerHTML = '';
-      mobileCardList.innerHTML = '';
-      if (filteredExpenses.length === 0) {
-        emptyState.classList.remove('hidden');
-        emptyState.classList.add('flex');
-        return;
-      }
-      emptyState.classList.add('hidden');
-      emptyState.classList.remove('flex');
+      const deskBody = document.getElementById('desktopTableBody');
+      const mobileList = document.getElementById('mobileCardList');
+      deskBody.innerHTML = ''; mobileList.innerHTML = '';
+      if (filteredExpenses.length === 0) { document.getElementById('emptyState').classList.remove('hidden'); return; }
+      document.getElementById('emptyState').classList.add('hidden');
 
-      const groupedData = {};
-      filteredExpenses.forEach(expense => {
-        const key = (expense.content && expense.content.trim()) ? expense.content.trim() : '未分類項目';
-        if (!groupedData[key]) groupedData[key] = { total: 0, items: [] };
-        groupedData[key].items.push(expense);
-        groupedData[key].total += expense.amount;
+      const grouped = {};
+      filteredExpenses.forEach(exp => {
+        const key = (exp.content && exp.content.trim()) ? exp.content.trim() : '未分類項目';
+        if (!grouped[key]) grouped[key] = { total: 0, items: [] };
+        grouped[key].items.push(exp); grouped[key].total += exp.amount;
       });
 
-      const sortedKeys = Object.keys(groupedData).sort((a, b) => {
-        const indexA = customGroupOrder.indexOf(a);
-        const indexB = customGroupOrder.indexOf(b);
-        if (a === '未分類項目') return 1;
-        if (b === '未分類項目') return -1;
-        if (indexA !== -1 && indexB !== -1) return indexA - indexB;
-        if (indexA !== -1) return -1;
-        if (indexB !== -1) return 1;
-        return a.localeCompare(b, 'zh-TW');
+      const sortedKeys = Object.keys(grouped).sort((a, b) => {
+        const iA = customGroupOrder.indexOf(a), iB = customGroupOrder.indexOf(b);
+        if (a === '未分類項目') return 1; if (b === '未分類項目') return -1;
+        if (iA !== -1 && iB !== -1) return iA - iB;
+        return (iA !== -1) ? -1 : (iB !== -1) ? 1 : a.localeCompare(b, 'zh-TW');
       });
 
       sortedKeys.forEach(groupName => {
-        const group = groupedData[groupName];
-        const isExpanded = expandedGroups.has(groupName);
-        const groupColorClass = group.total < 0 ? 'text-rose-600' : 'text-emerald-600';
-        const groupFormattedTotal = formatMoney(group.total);
-
+        const group = grouped[groupName], isExp = expandedGroups.has(groupName), gColor = group.total < 0 ? 'text-rose-600' : 'text-emerald-600';
         const masterTr = document.createElement('tr');
-        masterTr.className = 'cursor-pointer group select-none';
+        masterTr.className = 'cursor-pointer group select-none hover:bg-slate-50';
         masterTr.onclick = () => toggleGroup(groupName);
-        const dsClasses = 'sticky top-12 z-10 bg-white h-12 shadow-[0_1px_0_#e2e8f0,0_-1px_0_#e2e8f0] hover:bg-slate-50 transition-colors';
-        masterTr.innerHTML = `<td class="${dsClasses} px-4 md:px-6 text-sm whitespace-nowrap" colspan="2"><div class="flex items-center gap-2"><i class="ph ${isExpanded ? 'ph-caret-down' : 'ph-caret-right'} text-slate-400 text-lg font-bold"></i><span class="text-sm md:text-base font-bold text-slate-800">${groupName}</span><span class="text-[10px] md:text-xs text-slate-500 font-medium">(${group.items.length} 筆)</span></div></td><td class="${dsClasses} px-4 md:px-6 text-base md:text-lg font-bold text-right tabular-nums ${groupColorClass} whitespace-nowrap">${groupFormattedTotal}</td>`;
-        desktopTableBody.appendChild(masterTr);
+        masterTr.innerHTML = `<td class="sticky top-0 z-10 bg-white h-12 px-4 md:px-6 text-sm shadow-[0_1px_0_#e2e8f0]" colspan="2"><div class="flex items-center gap-2"><i class="ph ${isExp ? 'ph-caret-down' : 'ph-caret-right'} text-slate-400 font-bold"></i><span class="font-bold text-slate-800">${groupName}</span><span class="text-[10px] text-slate-500">(${group.items.length} 筆)</span></div></td><td class="sticky top-0 z-10 bg-white px-4 md:px-6 text-base font-bold text-right tabular-nums ${gColor} shadow-[0_1px_0_#e2e8f0]">${formatMoney(group.total)}</td>`;
+        deskBody.appendChild(masterTr);
 
         const masterCard = document.createElement('div');
-        masterCard.className = 'sticky top-[40px] z-10 bg-white border-y border-slate-200 px-4 py-3 flex items-center justify-between cursor-pointer active:bg-slate-50 transition-colors select-none';
+        masterCard.className = 'sticky top-[40px] z-10 bg-white border-y border-slate-200 px-4 py-3 flex items-center justify-between cursor-pointer select-none';
         masterCard.onclick = () => toggleGroup(groupName);
-        masterCard.innerHTML = `<div class="flex items-center gap-2 min-w-0"><i class="ph ${isExpanded ? 'ph-caret-down' : 'ph-caret-right'} text-slate-400 text-base font-bold shrink-0"></i><span class="font-bold text-slate-800 text-sm text-nowrap-truncate">${groupName}</span><span class="text-[10px] text-slate-500 font-medium shrink-0">(${group.items.length} 筆)</span></div><div class="text-base font-bold tabular-nums ${groupColorClass} whitespace-nowrap ml-2 shrink-0">${groupFormattedTotal}</div>`;
-        mobileCardList.appendChild(masterCard);
+        masterCard.innerHTML = `<div class="flex items-center gap-2 min-w-0"><i class="ph ${isExp ? 'ph-caret-down' : 'ph-caret-right'} text-slate-400 font-bold"></i><span class="font-bold text-slate-800 text-sm truncate">${groupName}</span><span class="text-[10px] text-slate-500">(${group.items.length} 筆)</span></div><div class="text-base font-bold tabular-nums ${gColor}">${formatMoney(group.total)}</div>`;
+        mobileList.appendChild(masterCard);
 
-        if (isExpanded) {
-          group.items.forEach(expense => {
-            const childColorClass = expense.amount < 0 ? 'text-rose-600' : 'text-emerald-600';
-            const childFormattedAmount = formatMoney(expense.amount);
-            const hasReceiptIcon = (expense.receiptUrl && expense.receiptUrl.trim() !== '') ? '<i class="ph ph-image text-slate-400 text-base ml-1"></i>' : '';
-
+        if (isExp) {
+          group.items.forEach(exp => {
+            const hasIcon = (exp.receiptUrl && exp.receiptUrl.trim() !== '') ? '<i class="ph ph-image text-slate-400 ml-1"></i>' : '';
             const childTr = document.createElement('tr');
-            childTr.className = 'hover:bg-slate-50 transition-colors cursor-pointer group/child';
-            childTr.onclick = () => openModal(expense.id);
-            childTr.innerHTML = `<td class="py-3 px-4 md:px-6 text-sm text-slate-500 pl-8 md:pl-10 border-b border-slate-100 whitespace-nowrap">${expense.date || '-'}</td><td class="py-3 px-4 md:px-6 text-sm text-slate-600 border-b border-slate-100 text-nowrap-truncate"><div class="flex items-center gap-1"><span class="text-nowrap-truncate">${expense.category || '-'}</span>${hasReceiptIcon}</div></td><td class="py-3 px-4 md:px-6 text-sm font-semibold text-right tabular-nums ${childColorClass} border-b border-slate-100 whitespace-nowrap">${childFormattedAmount}</td>`;
-            desktopTableBody.appendChild(childTr);
+            childTr.className = 'hover:bg-slate-50 transition-colors cursor-pointer';
+            childTr.onclick = () => openModal(exp.id);
+            childTr.innerHTML = `<td class="py-3 px-4 md:px-6 text-sm text-slate-500 pl-10 border-b border-slate-100">${exp.date || '-'}</td><td class="py-3 px-4 md:px-6 text-sm text-slate-600 border-b border-slate-100 truncate"><div class="flex items-center gap-1"><span>${exp.category || '-'}</span>${hasIcon}</div></td><td class="py-3 px-4 md:px-6 text-sm font-semibold text-right tabular-nums ${exp.amount < 0 ? 'text-rose-600' : 'text-emerald-600'} border-b border-slate-100">${formatMoney(exp.amount)}</td>`;
+            deskBody.appendChild(childTr);
 
             const childCard = document.createElement('div');
-            childCard.className = 'bg-transparent px-4 py-4 border-b border-slate-100 hover:bg-slate-50 active:bg-slate-100 transition-colors cursor-pointer flex items-center justify-between';
-            childCard.onclick = () => openModal(expense.id);
-            childCard.innerHTML = `
-                <div class="w-16 text-[10px] text-slate-400 whitespace-nowrap shrink-0">${expense.date || '-'}</div>
-                <div class="flex-1 px-2 text-sm text-slate-700 font-medium text-nowrap-truncate flex items-center min-w-0">
-                  <span class="truncate">${expense.category || '-'}</span>
-                  ${hasReceiptIcon}
-                </div>
-                <div class="w-20 text-sm font-bold tabular-nums ${childColorClass} whitespace-nowrap text-right shrink-0">${childFormattedAmount}</div>
-            `;
-            mobileCardList.appendChild(childCard);
+            childCard.className = 'bg-transparent px-4 py-4 border-b border-slate-100 hover:bg-slate-50 cursor-pointer flex items-center justify-between';
+            childCard.onclick = () => openModal(exp.id);
+            childCard.innerHTML = `<div class="w-16 text-[10px] text-slate-400 shrink-0">${exp.date || '-'}</div><div class="flex-1 px-2 text-sm text-slate-700 font-medium truncate flex items-center"><span>${exp.category || '-'}</span>${hasIcon}</div><div class="w-20 text-sm font-bold tabular-nums ${exp.amount < 0 ? 'text-rose-600' : 'text-emerald-600'} text-right shrink-0">${formatMoney(exp.amount)}</div>`;
+            mobileList.appendChild(childCard);
           });
         }
       });
+      updateStats();
     }
 
-    function handleSearch(e) {
-      const term = e.target.value.toLowerCase();
-      filteredExpenses = expenses.filter(item => (item.description?.toLowerCase().includes(term)) || (item.category?.toLowerCase().includes(term)) || (item.content?.toLowerCase().includes(term)));
-      if (term) {
-        const matchingGroups = new Set(filteredExpenses.map(e => e.content || '未分類項目'));
-        matchingGroups.forEach(g => expandedGroups.add(g));
-      }
-      updateStats();
+    function handleSearch() {
+      const term = document.getElementById('searchInput').value.toLowerCase();
+      filteredExpenses = sessionExpenses.filter(exp => exp.description?.toLowerCase().includes(term) || exp.category?.toLowerCase().includes(term) || exp.content?.toLowerCase().includes(term));
+      if (term) filteredExpenses.forEach(exp => expandedGroups.add(exp.content || '未分類項目'));
       renderLists();
     }
 
     function parseCSV(csvText) {
-      const lines = csvText.split(/\r?\n/);
-      const dataLines = lines.slice(1).filter(line => line.trim() !== '');
-      return dataLines.map((line, index) => {
-        const values = line.split(/,(?=(?:(?:[^"]*"){2})*[^"]*$)/);
-        const cleanValues = values.map(v => v.trim().replace(/^"|"$/g, '').replace(/\u00a0/g, ' '));
-        const dateStr = cleanValues[0] || '';
-        const expenseStr = cleanValues[2] || '';
-        const incomeStr = cleanValues[3] || '';
-        const descStr = cleanValues[5] || '';
-        const contentStr = cleanValues[10] || ''; 
-        const categoryStr = cleanValues[11] || '未分類';
-        const receiptUrlStr = cleanValues[12] || ''; 
-        
-        let finalAmount = 0;
-        if (expenseStr) finalAmount = -Math.abs(parseFloat(expenseStr.replace(/[^0-9.-]/g, '')) || 0);
-        else if (incomeStr) finalAmount = Math.abs(parseFloat(incomeStr.replace(/[^0-9.-]/g, '')) || 0);
-
-        return { id: `row-${index}`, date: dateStr, content: contentStr, amount: finalAmount, description: descStr, category: categoryStr, receiptUrl: receiptUrlStr };
+      const lines = csvText.split(/\r?\n/).slice(1).filter(l => l.trim() !== '');
+      return lines.map((l, i) => {
+        const v = l.split(/,(?=(?:(?:[^"]*"){2})*[^"]*$)/).map(v => v.trim().replace(/^"|"$/g, '').replace(/\u00a0/g, ' '));
+        const expStr = v[2] || '', incStr = v[3] || '';
+        let amt = 0;
+        if (expStr) amt = -Math.abs(parseFloat(expStr.replace(/[^0-9.-]/g, '')) || 0);
+        else if (incStr) amt = Math.abs(parseFloat(incStr.replace(/[^0-9.-]/g, '')) || 0);
+        return { id: `row-${i}`, date: v[0] || '', content: v[10] || '', amount: amt, description: v[5] || '', category: v[11] || '未分類', receiptUrl: v[12] || '' };
       }).filter(item => {
-        let year = 0;
-        const y4 = item.date.match(/(\d{4})/);
-        const y3 = item.date.match(/(11\d)/);
-        if (y4) year = parseInt(y4[0], 10);
-        else if (y3) year = parseInt(y3[0], 10) + 1911;
-        return year >= 2026 && (item.date || item.description || item.amount !== 0);
+        const y4 = item.date.match(/(\d{4})/), y3 = item.date.match(/(11\d)/);
+        let year = y4 ? parseInt(y4[0]) : (y3 ? parseInt(y3[0]) + 1911 : 0);
+        return year >= 2026 && (item.date || item.amount !== 0);
       });
     }
 
     async function handleLoadData() {
-      syncBtn.disabled = true;
-      syncIcon.className = 'ph ph-arrows-clockwise animate-spin text-2xl md:text-3xl';
-      errorBox.classList.add('hidden');
-      const freshCsvUrl = `${csvUrl}&t=${Date.now()}`;
+      const syncBtn = document.getElementById('syncBtn');
+      const syncIcon = document.getElementById('syncIcon');
+      syncBtn.disabled = true; syncIcon.className = 'ph ph-arrows-clockwise animate-spin text-2xl md:text-3xl';
       try {
-        let response;
-        try { response = await fetch(freshCsvUrl); } 
-        catch (e) { response = await fetch(`https://api.allorigins.win/raw?url=${encodeURIComponent(freshCsvUrl)}`); }
-        if (!response.ok) throw new Error(`HTTP ${response.status}`);
-        const text = await response.text();
-        expenses = parseCSV(text);
-        filteredExpenses = [...expenses];
-        expandedGroups.clear();
-        updateStats();
-        renderLists();
+        const fUrl = `${csvUrl}&t=${Date.now()}`;
+        let res = await fetch(fUrl).catch(() => fetch(`https://api.allorigins.win/raw?url=${encodeURIComponent(fUrl)}`));
+        const txt = await res.text();
+        expenses = parseCSV(txt);
+        sessionExpenses = [...expenses];
+        handleSearch();
       } catch (err) {
-        errorMsg.textContent = '載入失敗: ' + err.message;
-        errorBox.classList.remove('hidden');
+        document.getElementById('errorMsg').textContent = '同步失敗: ' + err.message;
+        document.getElementById('errorBox').classList.remove('hidden');
       } finally {
-        syncBtn.disabled = false;
-        syncIcon.className = 'ph ph-arrows-clockwise text-2xl md:text-3xl';
+        syncBtn.disabled = false; syncIcon.className = 'ph ph-arrows-clockwise text-2xl md:text-3xl';
       }
     }
 
-    modalImage.onload = () => { modalLoading.classList.add('hidden'); modalImage.classList.remove('hidden'); };
-    modalImage.onerror = () => { modalLoading.classList.add('hidden'); modalError.classList.remove('hidden'); };
-    searchInput.oninput = handleSearch;
-    syncBtn.onclick = handleLoadData;
-    closeModalBtn.onclick = closeModal;
-    modal.onclick = (e) => { if (e.target === modal) closeModal(); };
-    modalContentWrapper.onclick = (e) => e.stopPropagation();
+    document.getElementById('modalImage').onload = () => { document.getElementById('modalLoading').classList.add('hidden'); document.getElementById('modalImage').classList.remove('hidden'); };
+    document.getElementById('modalImage').onerror = () => { document.getElementById('modalLoading').classList.add('hidden'); document.getElementById('modalError').classList.remove('hidden'); };
     document.addEventListener('DOMContentLoaded', handleLoadData);
   </script>
 </body>
