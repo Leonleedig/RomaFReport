@@ -30,9 +30,10 @@
       white-space: nowrap;
     }
     
-    .math-val { font-size: clamp(1rem, 5vw, 2.2rem); }
-    .math-symbol { font-size: clamp(0.8rem, 3.5vw, 1.8rem); }
-    .math-label { font-size: clamp(0.55rem, 2.2vw, 0.8rem); }
+    /* 🚀 彈性縮放字體，確保算式能在不同裝置維持絕佳比例 */
+    .math-val { font-size: clamp(0.8rem, 3.2vw, 2.2rem); }
+    .math-symbol { font-size: clamp(0.7rem, 2vw, 1.5rem); }
+    .math-label { font-size: clamp(0.5rem, 1.5vw, 0.85rem); }
 
     .no-select {
       -webkit-touch-callout: none;
@@ -143,8 +144,9 @@
         <p id="errorMsg" class="text-red-700 text-sm break-all"></p>
       </div>
 
+      <!-- 🚀 將算式區塊約束在 max-w-[80vw] 內，並置中對齊 -->
       <div class="mb-6 flex justify-center w-full shrink-0 px-2">
-        <div class="flex items-center gap-1 md:gap-4 math-text whitespace-nowrap">
+        <div class="flex items-center justify-center gap-1 md:gap-4 math-text whitespace-nowrap max-w-[80vw] mx-auto w-full">
           <div class="flex flex-col items-center">
             <span id="mathA" class="math-val font-bold tabular-nums text-emerald-600">0</span>
             <span class="math-label text-black mt-1 font-medium">A.收入</span>
@@ -162,7 +164,11 @@
           <div class="math-symbol font-light text-black">=</div>
           <div class="flex flex-col items-center">
             <span id="mathTotal" class="math-val font-bold tabular-nums text-emerald-600">0</span>
-            <span class="math-label text-black mt-1 font-medium">本季社區基金結餘 (單位：新台幣)</span>
+            <!-- 🚀 換行並微調單位文字的樣式 -->
+            <span class="math-label text-black mt-1 font-medium text-center leading-tight">
+              本季社區基金結餘<br>
+              <span class="text-[0.85em] font-normal opacity-80">(單位：新台幣)</span>
+            </span>
           </div>
         </div>
       </div>
@@ -491,14 +497,14 @@
 
         const bHeaderColor = block.total < 0 ? 'text-rose-700' : 'text-emerald-700';
         
-        // 桌面版區塊標題 (1.區標題列的淺灰底色調淡25% -> bg-slate-100)
+        // 桌面版區塊標題
         const blockTr = document.createElement('tr');
         blockTr.className = 'cursor-pointer hover:bg-slate-200/50 transition-colors select-none group/block';
         blockTr.onclick = () => toggleBlock(blockId);
         blockTr.innerHTML = `<td colspan="2" class="sticky top-0 z-30 bg-slate-100/95 group-hover/block:bg-slate-200/95 backdrop-blur-sm h-10 pl-4 md:pl-6 pr-4 md:pr-6 font-extrabold text-black shadow-[0_1px_0_#cbd5e1] text-sm md:text-base transition-colors"><div class="flex items-center gap-2"><i class="ph ${isBlockExpanded ? 'ph-caret-down' : 'ph-caret-right'} text-black text-lg"></i>${block.title}</div></td><td class="sticky top-0 z-30 bg-slate-100/95 group-hover/block:bg-slate-200/95 backdrop-blur-sm px-4 md:px-6 font-extrabold text-right tabular-nums ${bHeaderColor} shadow-[0_1px_0_#cbd5e1] text-sm md:text-base transition-colors">${formatMoney(block.total)}</td>`;
         deskBody.appendChild(blockTr);
 
-        // 手機版區塊標題 (1.區標題列的淺灰底色調淡25% -> bg-slate-100)
+        // 手機版區塊標題
         const blockCard = document.createElement('div');
         blockCard.className = `sticky top-0 z-30 bg-slate-100/95 backdrop-blur-sm border-y border-slate-300 px-4 h-10 flex items-center justify-between shadow-sm cursor-pointer active:bg-slate-200/95 transition-colors select-none`;
         blockCard.onclick = () => toggleBlock(blockId);
