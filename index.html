@@ -3,7 +3,7 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>羅馬假期財務報表</title>
+  <title>羅馬假期社區財務報告</title>
   
   <script src="https://cdn.tailwindcss.com"></script>
   <script src="https://unpkg.com/@phosphor-icons/web"></script>
@@ -29,9 +29,10 @@
       font-size: clamp(1rem, 4.5vw, 1.5rem);
       white-space: nowrap;
     }
-    .math-val { font-size: clamp(1.2rem, 6vw, 2.5rem); }
-    .math-symbol { font-size: clamp(1rem, 4vw, 2rem); }
-    .math-label { font-size: clamp(0.6rem, 2.5vw, 0.875rem); }
+    
+    .math-val { font-size: clamp(1rem, 5vw, 2.2rem); }
+    .math-symbol { font-size: clamp(0.8rem, 3.5vw, 1.8rem); }
+    .math-label { font-size: clamp(0.55rem, 2.2vw, 0.8rem); }
 
     .no-select {
       -webkit-touch-callout: none;
@@ -90,30 +91,17 @@
 </head>
 <body class="bg-slate-50 text-slate-800 font-sans h-screen flex flex-col overflow-hidden">
 
-  <!-- 頂部導航 -->
-  <header class="bg-white shadow-sm border-b border-slate-200 z-40 shrink-0">
+  <header class="bg-slate-50 z-40 shrink-0">
     <div class="max-w-6xl mx-auto px-4 py-4 flex items-center justify-center gap-2 flex-nowrap">
-      <!-- 🚀 動態標題區塊 -->
       <h1 id="mainTitle" class="font-bold text-slate-800 tracking-tight responsive-title">
         載入資料中...
       </h1>
-      
-      <button 
-        id="syncBtn"
-        onclick="handleLoadData()"
-        title="同步最新資料"
-        class="text-indigo-600 hover:text-indigo-800 transition-colors p-1 flex items-center justify-center disabled:text-indigo-300 shrink-0"
-      >
-        <i id="syncIcon" class="ph ph-arrows-clockwise text-2xl md:text-3xl"></i>
-      </button>
     </div>
   </header>
 
-  <!-- 主要內容區 -->
   <div class="flex-1 overflow-auto no-scrollbar pb-10" id="scrollContainer">
     <main class="max-w-6xl mx-auto px-4 py-8">
       
-      <!-- 整合式管理面板 -->
       <div id="adminPanel" class="hidden mb-10 overflow-hidden bg-white border border-indigo-200 rounded-2xl shadow-lg transition-all">
         <div class="bg-indigo-600 px-4 py-2 flex justify-between items-center">
           <div class="flex items-center gap-2 text-white text-sm font-bold">
@@ -155,32 +143,32 @@
         <p id="errorMsg" class="text-red-700 text-sm break-all"></p>
       </div>
 
-      <!-- 總覽算式區 -->
-      <div class="mb-12 flex justify-center w-full shrink-0 px-2">
-        <div class="flex items-center gap-2 md:gap-8 math-text whitespace-nowrap">
+      <div class="mb-6 flex justify-center w-full shrink-0 px-2">
+        <div class="flex items-center gap-1 md:gap-4 math-text whitespace-nowrap">
           <div class="flex flex-col items-center">
-            <span class="math-val font-bold tabular-nums">214,680</span>
-            <span class="math-label text-slate-500 mt-1 font-medium">114年結餘</span>
+            <span id="mathA" class="math-val font-bold tabular-nums text-emerald-600">0</span>
+            <span class="math-label text-black mt-1 font-medium">A.收入</span>
           </div>
-          <div class="math-symbol font-light text-slate-400">+</div>
+          <div class="math-symbol font-light text-black">-</div>
           <div class="flex flex-col items-center">
-            <span id="detailSumDisplay" class="math-val font-bold tabular-nums">0</span>
-            <span class="math-label text-slate-500 mt-1 font-medium">本季收支</span>
+            <span id="mathB" class="math-val font-bold tabular-nums text-rose-600">0</span>
+            <span class="math-label text-black mt-1 font-medium">B.支出</span>
           </div>
-          <div class="math-symbol font-light text-slate-400">=</div>
+          <div class="math-symbol font-light text-black">+</div>
           <div class="flex flex-col items-center">
-            <span id="totalAmountDisplay" class="math-val font-bold tabular-nums">216,730</span>
-            <span class="math-label text-slate-500 mt-1 font-medium">現在結餘</span>
+            <span id="mathC" class="math-val font-bold tabular-nums text-emerald-600">0</span>
+            <span class="math-label text-black mt-1 font-medium">C.零用金結餘</span>
+          </div>
+          <div class="math-symbol font-light text-black">=</div>
+          <div class="flex flex-col items-center">
+            <span id="mathTotal" class="math-val font-bold tabular-nums text-emerald-600">0</span>
+            <span class="math-label text-black mt-1 font-medium">本季社區基金結餘 (單位：新台幣)</span>
           </div>
         </div>
       </div>
 
-      <!-- 列表搜尋與明細區 -->
       <div class="flex flex-col">
-        <div class="py-4 border-b border-slate-300 flex flex-col sm:flex-row justify-between items-center gap-4 shrink-0">
-          <h2 id="listTitle" class="text-base md:text-lg font-semibold text-slate-800 flex items-center self-start sm:self-auto whitespace-nowrap">
-            載入資料中...
-          </h2>
+        <div class="pt-2 pb-4 border-b border-slate-300 flex justify-end items-center shrink-0">
           <div class="relative w-full sm:w-64 search-container">
             <i class="ph ph-magnifying-glass absolute left-3 top-1/2 -translate-y-1/2 text-slate-400"></i>
             <input 
@@ -196,23 +184,11 @@
         <div class="relative no-scrollbar">
           <div class="hidden md:block overflow-x-hidden">
             <table class="w-full text-left border-separate table-fixed" style="border-spacing: 0;">
-              <thead>
-                <tr class="text-slate-500 text-sm">
-                  <th class="sticky top-0 z-20 bg-slate-50 h-12 px-4 md:px-6 font-medium whitespace-nowrap shadow-[0_1px_0_#cbd5e1] w-28 md:w-32">日期</th>
-                  <th class="sticky top-0 z-20 bg-slate-50 h-12 px-4 md:px-6 font-medium shadow-[0_1px_0_#cbd5e1]">項目 / 明細</th>
-                  <th class="sticky top-0 z-20 bg-slate-50 h-12 px-4 md:px-6 font-medium text-right whitespace-nowrap shadow-[0_1px_0_#cbd5e1] w-32 md:w-40">金額</th>
-                </tr>
-              </thead>
               <tbody id="desktopTableBody" class="bg-transparent"></tbody>
             </table>
           </div>
 
           <div class="md:hidden flex flex-col">
-            <div class="sticky top-0 z-20 bg-slate-50 border-b border-slate-200 px-4 h-10 flex items-center justify-between text-[11px] font-bold text-slate-500 uppercase tracking-wider">
-               <div class="w-16 pl-2">日期</div>
-               <div class="flex-1 px-2 text-center">項目 / 明細</div>
-               <div class="w-20 text-right">金額</div>
-            </div>
             <div id="mobileCardList" class="flex flex-col pb-4"></div>
           </div>
 
@@ -223,18 +199,21 @@
         </div>
       </div>
 
-      <!-- 紙本公告款式署名區 -->
-      <div class="hidden md:flex print:flex w-full justify-between items-end mt-24 mb-4 text-[#000000] signature-area">
-        <img src="https://pub-328fb034a36942da8335503ff2804fc7.r2.dev/RomaFReport.png" alt="報表 QRCode" class="w-28 h-28 object-contain pointer-events-none" />
-        <div class="text-xl font-bold pb-2">主任委員：＿＿＿＿＿</div>
-        <div class="text-xl font-bold pb-2">監察委員：＿＿＿＿＿</div>
-        <div class="text-xl font-bold pb-2">財務委員：＿＿＿＿＿</div>
+      <div class="hidden md:flex print:flex flex-col w-full mt-24 mb-4 text-[#000000] signature-area">
+        <div class="flex w-full justify-between items-end mb-6">
+          <div class="text-xl font-bold pb-2">主任委員＿＿＿＿＿</div>
+          <div class="text-xl font-bold pb-2">副主任委員＿＿＿＿＿</div>
+          <div class="text-xl font-bold pb-2">監察委員＿＿＿＿＿</div>
+          <div class="text-xl font-bold pb-2">財務委員＿＿＿＿＿</div>
+        </div>
+        <div class="w-full flex justify-start">
+          <img src="https://pub-328fb034a36942da8335503ff2804fc7.r2.dev/RomaFReport.png" alt="報表 QRCode" class="w-28 h-28 object-contain pointer-events-none" />
+        </div>
       </div>
 
     </main>
   </div>
 
-  <!-- 交易明細燈箱 -->
   <div id="receiptModal" class="fixed inset-0 z-50 flex items-center justify-center bg-slate-900/90 backdrop-blur-sm hidden modal-enter p-0 sm:p-4">
     <div class="bg-white w-full h-full sm:h-auto sm:max-h-[95vh] sm:max-w-4xl sm:rounded-2xl shadow-2xl flex flex-col overflow-hidden" id="modalContentWrapper">
       <div class="shrink-0 flex items-center justify-between px-4 py-3 md:px-6 md:py-4 border-b border-slate-100 bg-white z-50">
@@ -250,7 +229,7 @@
             <div id="modalAmount" class="text-2xl md:text-4xl font-bold tabular-nums text-right shrink-0"></div>
           </div>
           <div class="flex flex-wrap items-center gap-3 text-slate-600">
-            <span id="modalDate" class="flex items-center gap-1 font-medium bg-slate-100 px-3 py-1.5 rounded-md text-sm md:text-base"><i class="ph ph-calendar-blank"></i> </span>
+            <span id="modalDate" class="flex items-center gap-1 font-medium bg-slate-100 px-3 py-1.5 rounded-md text-sm md:text-base"><i class="ph ph-calendar-blank"></i> <span id="modalDateText"></span></span>
             <span id="modalSubtitle" class="text-base md:text-lg font-medium"></span>
           </div>
         </div>
@@ -267,35 +246,44 @@
 
   <script>
     const SHEET_ID = '1V2tkiYQ5qZFRDJ0mLFPzt6H_8zXDxrtgnoUdrBIm2Ao';
-    const SHEET_NAME = 'ALLINDEX';
-    const csvUrl = `https://docs.google.com/spreadsheets/d/${SHEET_ID}/gviz/tq?tqx=out:csv&sheet=${SHEET_NAME}`;
+    const csvUrl = `https://docs.google.com/spreadsheets/d/${SHEET_ID}/gviz/tq?tqx=out:csv&sheet=ALLINDEX`;
+    const pettyCashUrl = `https://docs.google.com/spreadsheets/d/${SHEET_ID}/gviz/tq?tqx=out:csv&sheet=零用金`;
     const configUrl = `https://docs.google.com/spreadsheets/d/${SHEET_ID}/gviz/tq?tqx=out:csv&sheet=CONFIG`;
     const ADMIN_PASSWORD = 'Roma257001008783';
 
-    // 🚀 全域設定變數
     let globalStartDate = null;
     let globalEndDate = null;
     let reportYear = "115";
     let reportQuarter = "1";
 
-    let allExpenses = []; // 儲存資料庫撈回的「所有資料」
-    let filteredExpenses = []; // 搜尋後的顯示結果
-    let sessionExpenses = []; // 當前依據日期篩選後的基準資料 (受 CONFIG 或面板控制)
+    let allExpenses = []; 
+    let filteredExpenses = []; 
+    let sessionExpenses = []; 
     let expandedGroups = new Set();
-    const FIXED_INITIAL_BALANCE = 214680;
-    const customGroupOrder = ['管理費收入', '管理費代收支出', '清潔費支出', '零用金', '定存本息', '誤款收支'];
+    let blockExpandedState = {}; // 🚀 記錄區塊標題列的開合狀態
+    const FIXED_INITIAL_BALANCE = 216730; // 🚀 恢復為常數，鎖定為 216,730
+    
+    // 區塊定義
+    const blocksConfig = [
+      { id: 'A', title: 'A. 收入', keys: ['114年基金結餘', '管理費收入', '定存本息'] },
+      { id: 'B', title: 'B. 支出', keys: ['管理費代收支出', '清潔費支出', '零用金'] },
+      { id: 'C', title: 'C. 零用金結餘', keys: ['零用金收支'] },
+      { id: 'OTHER', title: 'D. 其他', keys: [] }
+    ];
+    const groupOrder = ['114年基金結餘', '管理費收入', '定存本息', '管理費代收支出', '清潔費支出', '零用金', '零用金收支', '誤款收支'];
 
-    // --- 全域資料篩選核心 (依據 CONFIG 設定) ---
     function getGlobalFilteredExpenses() {
       let result = allExpenses;
       if (globalStartDate && !isNaN(globalStartDate.getTime())) {
         result = result.filter(e => {
+          if (e.id === 'init-bal' || e.isPettyCash) return true; // 虛擬與獨立帳本略過日期篩選
           const d = new Date(e.date);
           return !isNaN(d.getTime()) && d >= globalStartDate;
         });
       }
       if (globalEndDate && !isNaN(globalEndDate.getTime())) {
         result = result.filter(e => {
+          if (e.id === 'init-bal' || e.isPettyCash) return true;
           const d = new Date(e.date);
           return !isNaN(d.getTime()) && d <= globalEndDate;
         });
@@ -303,13 +291,10 @@
       return result;
     }
 
-    // --- 管理面板核心邏輯 ---
     function toggleAdminPanel() {
       const panel = document.getElementById('adminPanel');
       panel.classList.toggle('hidden');
-      if (!panel.classList.contains('hidden')) {
-        document.getElementById('adminPasswordInput').focus();
-      }
+      if (!panel.classList.contains('hidden')) document.getElementById('adminPasswordInput').focus();
     }
 
     function unlockAdmin() {
@@ -329,8 +314,7 @@
       document.getElementById('adminLocked').classList.remove('hidden');
       document.getElementById('adminUnlocked').classList.add('hidden');
       document.getElementById('adminPasswordInput').value = '';
-      
-      // 🚀 重新鎖定時，將資料範圍還原回 CONFIG 的全域設定
+      blockExpandedState = {}; // 🚀 重置區塊開合狀態
       sessionExpenses = getGlobalFilteredExpenses();
       handleSearch();
     }
@@ -338,43 +322,50 @@
     function populateDateDropdowns() {
       const startSelect = document.getElementById('startDateSelect');
       const endSelect = document.getElementById('endDateSelect');
-      
-      // 🚀 選單選項必須列出資料庫所有的日期 (allExpenses)，讓管理員有權選取 CONFIG 以外的日子
-      const uniqueDates = [...new Set(allExpenses.map(e => e.date))].sort((a, b) => new Date(a) - new Date(b));
+      // 過濾掉無日期的資料，供管理員選單使用
+      const uniqueDates = [...new Set(allExpenses.filter(e => e.date && e.date !== '-').map(e => e.date))].sort((a, b) => new Date(a) - new Date(b));
       
       startSelect.innerHTML = uniqueDates.map(d => `<option value="${d}">${d}</option>`).join('');
       endSelect.innerHTML = uniqueDates.map(d => `<option value="${d}">${d}</option>`).join('');
       
-      // 自動停留在目前畫面正在顯示的區間
       if (sessionExpenses.length > 0) {
-        const cur = sessionExpenses.map(e => e.date).sort((a, b) => new Date(a) - new Date(b));
-        startSelect.value = cur[0];
-        endSelect.value = cur[cur.length - 1];
+        const cur = sessionExpenses.filter(e => e.date && e.date !== '-').map(e => e.date).sort((a, b) => new Date(a) - new Date(b));
+        if (cur.length > 0) {
+           startSelect.value = cur[0];
+           endSelect.value = cur[cur.length - 1];
+        }
       } else {
-        endSelect.value = uniqueDates[uniqueDates.length - 1];
+        if(uniqueDates.length > 0) endSelect.value = uniqueDates[uniqueDates.length - 1];
       }
     }
 
     function handleAdminFilterChange() {
       const start = new Date(document.getElementById('startDateSelect').value);
       const end = new Date(document.getElementById('endDateSelect').value);
-      
-      // 管理員手動篩選時，從 allExpenses (總資料) 中撈取，覆蓋全域設定
       sessionExpenses = allExpenses.filter(e => {
+        if (e.id === 'init-bal' || e.isPettyCash) return true;
         const d = new Date(e.date);
         return d >= start && d <= end;
       });
+      blockExpandedState = {}; // 🚀 重置區塊開合狀態
       handleSearch();
     }
 
-    // --- 資料載入與渲染邏輯 ---
     const formatMoney = (amount) => Number(amount).toLocaleString('zh-TW');
 
-    function updateStats() {
-      const absoluteSum = sessionExpenses.reduce((sum, item) => sum + (Number(item.amount) || 0), 0);
-      document.getElementById('detailSumDisplay').textContent = formatMoney(absoluteSum);
-      document.getElementById('totalAmountDisplay').textContent = formatMoney(FIXED_INITIAL_BALANCE + absoluteSum);
-      document.getElementById('listTitle').innerHTML = `<i class="ph ph-list-dashes text-slate-500 mr-2"></i>本季收支 <span class="text-indigo-600 font-bold">${formatMoney(absoluteSum)}</span> 元，明細共 <span class="text-indigo-600 font-bold">${filteredExpenses.length}</span> 筆`;
+    function updateStats(blockData, validItemCount = 0) {
+      let aTotal = 0, bTotal = 0, cTotal = 0;
+      
+      if (blockData) {
+         aTotal = blockData['A'].total;
+         bTotal = blockData['B'].total;
+         cTotal = blockData['C'].total;
+      }
+
+      document.getElementById('mathA').textContent = formatMoney(aTotal);
+      document.getElementById('mathB').textContent = formatMoney(-bTotal); // 顯示為正值
+      document.getElementById('mathC').textContent = formatMoney(cTotal);
+      document.getElementById('mathTotal').textContent = formatMoney(aTotal + bTotal + cTotal);
     }
 
     function toggleGroup(groupName) {
@@ -383,19 +374,45 @@
       renderLists();
     }
 
+    // 🚀 新增：切換大區塊的開合狀態
+    function toggleBlock(blockId) {
+      blockExpandedState[blockId] = !blockExpandedState[blockId];
+      renderLists();
+    }
+
     function openModal(id) {
-      const exp = allExpenses.find(e => e.id === id);
+      let exp = allExpenses.find(e => e.id === id);
+      
+      if (id === 'init-bal') {
+        exp = {
+          id: 'init-bal', date: '-', content: '114年基金結餘', amount: FIXED_INITIAL_BALANCE,
+          description: '114年度結轉至本期結餘', category: '結餘', receiptUrl: ''
+        };
+      }
       if (!exp) return;
-      document.getElementById('modalMainTitle').textContent = `交易明細 - ${exp.content || '未分類'}`;
+      
+      // 🚀 依據是否為零用金客製化燈箱資訊
+      const modalDate = document.getElementById('modalDate');
+      if (exp.isPettyCash || exp.id === 'init-bal') {
+          document.getElementById('modalMainTitle').textContent = exp.isPettyCash ? '零用金' : '交易明細';
+          modalDate.classList.add('hidden');
+      } else {
+          document.getElementById('modalMainTitle').textContent = `交易明細 - ${exp.content || '未分類'}`;
+          modalDate.classList.remove('hidden');
+          document.getElementById('modalDateText').textContent = exp.date || '-';
+      }
+
       document.getElementById('modalSubtitle').textContent = exp.description || '無描述';
       document.getElementById('modalCategory').textContent = exp.category || '未分類';
-      document.getElementById('modalDate').innerHTML = `<i class="ph ph-calendar-blank"></i> ${exp.date || '-'}`;
+      
       const mAmount = document.getElementById('modalAmount');
       mAmount.textContent = formatMoney(exp.amount);
       mAmount.className = `text-2xl md:text-4xl font-bold tabular-nums text-right ${exp.amount < 0 ? 'text-rose-600' : 'text-emerald-600'}`;
+      
       document.getElementById('modalImage').classList.add('hidden');
       document.getElementById('modalError').classList.add('hidden');
       document.getElementById('modalLoading').classList.add('hidden');
+      
       if (exp.receiptUrl && exp.receiptUrl.trim() !== '') {
         document.getElementById('modalImageContainer').classList.remove('hidden');
         document.getElementById('modalLoading').classList.remove('hidden');
@@ -403,6 +420,7 @@
       } else {
         document.getElementById('modalImageContainer').classList.add('hidden');
       }
+      
       document.getElementById('receiptModal').classList.remove('hidden');
       setTimeout(() => { document.getElementById('receiptModal').classList.add('modal-enter-active'); }, 10);
     }
@@ -417,65 +435,177 @@
       const deskBody = document.getElementById('desktopTableBody');
       const mobileList = document.getElementById('mobileCardList');
       deskBody.innerHTML = ''; mobileList.innerHTML = '';
-      if (filteredExpenses.length === 0) { document.getElementById('emptyState').classList.remove('hidden'); return; }
+      
+      if (filteredExpenses.length === 0) { 
+        document.getElementById('emptyState').classList.remove('hidden'); 
+        updateStats({ 'A':{total:0}, 'B':{total:0}, 'C':{total:0} }, 0);
+        return; 
+      }
       document.getElementById('emptyState').classList.add('hidden');
 
-      const grouped = {};
+      const groupedData = {};
       filteredExpenses.forEach(exp => {
         const key = (exp.content && exp.content.trim()) ? exp.content.trim() : '未分類項目';
-        if (!grouped[key]) grouped[key] = { total: 0, items: [] };
-        grouped[key].items.push(exp); grouped[key].total += exp.amount;
+        if (!groupedData[key]) groupedData[key] = { total: 0, items: [] };
+        groupedData[key].items.push(exp);
+        groupedData[key].total += exp.amount;
       });
 
-      const sortedKeys = Object.keys(grouped).sort((a, b) => {
-        const iA = customGroupOrder.indexOf(a), iB = customGroupOrder.indexOf(b);
-        if (a === '未分類項目') return 1; if (b === '未分類項目') return -1;
-        if (iA !== -1 && iB !== -1) return iA - iB;
-        return (iA !== -1) ? -1 : (iB !== -1) ? 1 : a.localeCompare(b, 'zh-TW');
-      });
+      const blockData = {
+        'A': { title: blocksConfig[0].title, total: 0, itemCount: 0, groups: {} },
+        'B': { title: blocksConfig[1].title, total: 0, itemCount: 0, groups: {} },
+        'C': { title: blocksConfig[2].title, total: 0, itemCount: 0, groups: {} },
+        'OTHER': { title: blocksConfig[3].title, total: 0, itemCount: 0, groups: {} }
+      };
 
-      sortedKeys.forEach(groupName => {
-        const group = grouped[groupName], isExp = expandedGroups.has(groupName), gColor = group.total < 0 ? 'text-rose-600' : 'text-emerald-600';
-        const masterTr = document.createElement('tr');
-        masterTr.className = 'cursor-pointer group select-none hover:bg-slate-50';
-        masterTr.onclick = () => toggleGroup(groupName);
-        masterTr.innerHTML = `<td class="sticky top-0 z-10 bg-white h-12 px-4 md:px-6 text-sm shadow-[0_1px_0_#e2e8f0]" colspan="2"><div class="flex items-center gap-2"><i class="ph ${isExp ? 'ph-caret-down' : 'ph-caret-right'} text-slate-400 font-bold"></i><span class="font-bold text-slate-800">${groupName}</span><span class="text-[10px] text-slate-500">(${group.items.length} 筆)</span></div></td><td class="sticky top-0 z-10 bg-white px-4 md:px-6 text-base font-bold text-right tabular-nums ${gColor} shadow-[0_1px_0_#e2e8f0]">${formatMoney(group.total)}</td>`;
-        deskBody.appendChild(masterTr);
-
-        const masterCard = document.createElement('div');
-        masterCard.className = 'sticky top-[40px] z-10 bg-white border-y border-slate-200 px-4 py-3 flex items-center justify-between cursor-pointer select-none';
-        masterCard.onclick = () => toggleGroup(groupName);
-        masterCard.innerHTML = `<div class="flex items-center gap-2 min-w-0"><i class="ph ${isExp ? 'ph-caret-down' : 'ph-caret-right'} text-slate-400 font-bold"></i><span class="font-bold text-slate-800 text-sm truncate">${groupName}</span><span class="text-[10px] text-slate-500">(${group.items.length} 筆)</span></div><div class="text-base font-bold tabular-nums ${gColor}">${formatMoney(group.total)}</div>`;
-        mobileList.appendChild(masterCard);
-
-        if (isExp) {
-          group.items.forEach(exp => {
-            const hasIcon = (exp.receiptUrl && exp.receiptUrl.trim() !== '') ? '<i class="ph ph-image text-slate-400 ml-1"></i>' : '';
-            const childTr = document.createElement('tr');
-            childTr.className = 'hover:bg-slate-50 transition-colors cursor-pointer';
-            childTr.onclick = () => openModal(exp.id);
-            childTr.innerHTML = `<td class="py-3 px-4 md:px-6 text-sm text-slate-500 pl-10 border-b border-slate-100">${exp.date || '-'}</td><td class="py-3 px-4 md:px-6 text-sm text-slate-600 border-b border-slate-100 truncate"><div class="flex items-center gap-1"><span>${exp.category || '-'}</span>${hasIcon}</div></td><td class="py-3 px-4 md:px-6 text-sm font-semibold text-right tabular-nums ${exp.amount < 0 ? 'text-rose-600' : 'text-emerald-600'} border-b border-slate-100">${formatMoney(exp.amount)}</td>`;
-            deskBody.appendChild(childTr);
-
-            const childCard = document.createElement('div');
-            childCard.className = 'bg-transparent px-4 py-4 border-b border-slate-100 hover:bg-slate-50 cursor-pointer flex items-center justify-between';
-            childCard.onclick = () => openModal(exp.id);
-            childCard.innerHTML = `<div class="w-16 text-[10px] text-slate-400 shrink-0">${exp.date || '-'}</div><div class="flex-1 px-2 text-sm text-slate-700 font-medium truncate flex items-center"><span>${exp.category || '-'}</span>${hasIcon}</div><div class="w-20 text-sm font-bold tabular-nums ${exp.amount < 0 ? 'text-rose-600' : 'text-emerald-600'} text-right shrink-0">${formatMoney(exp.amount)}</div>`;
-            mobileList.appendChild(childCard);
-          });
+      Object.keys(groupedData).forEach(key => {
+        let assignedBlock = 'OTHER';
+        for (const cfg of blocksConfig) {
+          if (cfg.keys.includes(key)) { assignedBlock = cfg.id; break; }
         }
+        blockData[assignedBlock].groups[key] = groupedData[key];
+        blockData[assignedBlock].total += groupedData[key].total;
+        blockData[assignedBlock].itemCount += groupedData[key].items.length;
       });
-      updateStats();
+
+      const blockOrder = ['A', 'B', 'C'];
+      let validItemCount = 0;
+
+      blockOrder.forEach(blockId => {
+        const block = blockData[blockId];
+        validItemCount += block.itemCount;
+        
+        const groupKeys = Object.keys(block.groups).sort((a, b) => {
+            const iA = groupOrder.indexOf(a), iB = groupOrder.indexOf(b);
+            if (iA !== -1 && iB !== -1) return iA - iB;
+            return (iA !== -1) ? -1 : (iB !== -1) ? 1 : a.localeCompare(b, 'zh-TW');
+        });
+
+        // 🚀 判斷預設開合狀態：
+        // A、B區的主項是分類數 (groupKeys.length)，C區扁平化後的主項是單據總筆數 (block.itemCount)
+        if (blockExpandedState[blockId] === undefined) {
+          const mainRowCount = blockId === 'C' ? block.itemCount : groupKeys.length;
+          blockExpandedState[blockId] = mainRowCount <= 5;
+        }
+        const isBlockExpanded = blockExpandedState[blockId];
+
+        const bHeaderColor = block.total < 0 ? 'text-rose-700' : 'text-emerald-700';
+        
+        // 桌面版區塊標題 (1.區標題列的淺灰底色調淡25% -> bg-slate-100)
+        const blockTr = document.createElement('tr');
+        blockTr.className = 'cursor-pointer hover:bg-slate-200/50 transition-colors select-none group/block';
+        blockTr.onclick = () => toggleBlock(blockId);
+        blockTr.innerHTML = `<td colspan="2" class="sticky top-0 z-30 bg-slate-100/95 group-hover/block:bg-slate-200/95 backdrop-blur-sm h-10 pl-4 md:pl-6 pr-4 md:pr-6 font-extrabold text-black shadow-[0_1px_0_#cbd5e1] text-sm md:text-base transition-colors"><div class="flex items-center gap-2"><i class="ph ${isBlockExpanded ? 'ph-caret-down' : 'ph-caret-right'} text-black text-lg"></i>${block.title}</div></td><td class="sticky top-0 z-30 bg-slate-100/95 group-hover/block:bg-slate-200/95 backdrop-blur-sm px-4 md:px-6 font-extrabold text-right tabular-nums ${bHeaderColor} shadow-[0_1px_0_#cbd5e1] text-sm md:text-base transition-colors">${formatMoney(block.total)}</td>`;
+        deskBody.appendChild(blockTr);
+
+        // 手機版區塊標題 (1.區標題列的淺灰底色調淡25% -> bg-slate-100)
+        const blockCard = document.createElement('div');
+        blockCard.className = `sticky top-0 z-30 bg-slate-100/95 backdrop-blur-sm border-y border-slate-300 px-4 h-10 flex items-center justify-between shadow-sm cursor-pointer active:bg-slate-200/95 transition-colors select-none`;
+        blockCard.onclick = () => toggleBlock(blockId);
+        blockCard.innerHTML = `<div class="flex items-center gap-2"><i class="ph ${isBlockExpanded ? 'ph-caret-down' : 'ph-caret-right'} text-black text-lg"></i><span class="font-extrabold text-black text-sm">${block.title}</span></div><span class="font-extrabold tabular-nums ${bHeaderColor} text-sm">${formatMoney(block.total)}</span>`;
+        mobileList.appendChild(blockCard);
+
+        // 🚀 若狀態為收合，則直接跳過此區塊內容渲染
+        if (!isBlockExpanded) return;
+
+        if (groupKeys.length === 0) {
+            const emptyTr = document.createElement('tr');
+            emptyTr.innerHTML = `<td colspan="3" class="py-3 px-4 text-center text-sm text-black bg-white">目前無資料</td>`;
+            deskBody.appendChild(emptyTr);
+            const emptyCard = document.createElement('div');
+            emptyCard.className = 'py-3 px-4 text-center text-sm text-black border-b border-slate-100 bg-white';
+            emptyCard.innerHTML = '目前無資料';
+            mobileList.appendChild(emptyCard);
+        }
+
+        // 🚀 C 區塊專屬扁平化渲染 (零用金)
+        if (blockId === 'C') {
+          groupKeys.forEach(groupName => {
+            const group = block.groups[groupName];
+            group.items.forEach(exp => {
+              const gColor = exp.amount < 0 ? 'text-rose-600' : 'text-emerald-600';
+              const hasIcon = (exp.receiptUrl && exp.receiptUrl.trim() !== '') ? '<i class="ph ph-image text-black ml-1"></i>' : '';
+              
+              const tr = document.createElement('tr');
+              tr.className = 'cursor-pointer group select-none hover:bg-slate-50 bg-white';
+              tr.onclick = () => openModal(exp.id);
+              tr.innerHTML = `<td class="bg-white h-12 pl-8 md:pl-10 pr-4 md:pr-6 text-sm shadow-[0_1px_0_#e2e8f0]" colspan="2"><div class="flex items-center gap-2"><span class="font-bold text-black">${exp.category}</span>${hasIcon}</div></td><td class="bg-white px-4 md:px-6 text-base font-bold text-right tabular-nums ${gColor} shadow-[0_1px_0_#e2e8f0]">${formatMoney(exp.amount)}</td>`;
+              deskBody.appendChild(tr);
+
+              const card = document.createElement('div');
+              card.className = 'bg-white border-b border-slate-200 pl-8 pr-4 py-3 flex items-center justify-between cursor-pointer select-none';
+              card.onclick = () => openModal(exp.id);
+              card.innerHTML = `<div class="flex items-center gap-2 min-w-0"><span class="font-bold text-black text-sm truncate">${exp.category}</span>${hasIcon}</div><div class="text-base font-bold tabular-nums ${gColor}">${formatMoney(exp.amount)}</div>`;
+              mobileList.appendChild(card);
+            });
+          });
+          return; // 零用金不產生折疊層級
+        }
+
+        // --- 正常 A, B 區塊渲染 (包含吸頂欄名列) ---
+        groupKeys.forEach(groupName => {
+          const group = block.groups[groupName], isExp = expandedGroups.has(groupName), gColor = group.total < 0 ? 'text-rose-600' : 'text-emerald-600';
+          
+          const masterTr = document.createElement('tr');
+          masterTr.className = 'cursor-pointer group select-none hover:bg-slate-50 bg-white';
+          masterTr.onclick = () => toggleGroup(groupName);
+          masterTr.innerHTML = `<td class="bg-white h-12 pl-8 md:pl-10 pr-4 md:pr-6 text-sm shadow-[0_1px_0_#e2e8f0]" colspan="2"><div class="flex items-center gap-2"><i class="ph ${isExp ? 'ph-caret-down' : 'ph-caret-right'} text-black font-bold"></i><span class="font-bold text-black">${groupName}</span><span class="text-[10px] text-black">(${group.items.length} 筆)</span></div></td><td class="bg-white px-4 md:px-6 text-base font-bold text-right tabular-nums ${gColor} shadow-[0_1px_0_#e2e8f0]">${formatMoney(group.total)}</td>`;
+          deskBody.appendChild(masterTr);
+
+          const masterCard = document.createElement('div');
+          masterCard.className = 'bg-white border-b border-slate-200 pl-8 pr-4 py-3 flex items-center justify-between cursor-pointer select-none';
+          masterCard.onclick = () => toggleGroup(groupName);
+          masterCard.innerHTML = `<div class="flex items-center gap-2 min-w-0"><i class="ph ${isExp ? 'ph-caret-down' : 'ph-caret-right'} text-black font-bold"></i><span class="font-bold text-black text-sm truncate">${groupName}</span><span class="text-[10px] text-black">(${group.items.length} 筆)</span></div><div class="text-base font-bold tabular-nums ${gColor}">${formatMoney(group.total)}</div>`;
+          mobileList.appendChild(masterCard);
+
+          if (isExp) {
+            // 4.各區明細的吸頂式欄名列底色，保持白色（不填色）
+            const childHeaderTr = document.createElement('tr');
+            childHeaderTr.className = 'bg-white text-xs text-black uppercase tracking-wider select-none';
+            childHeaderTr.innerHTML = `<td class="sticky top-[40px] z-20 bg-white py-2 pl-12 md:pl-14 pr-4 md:pr-6 font-semibold border-b border-slate-200 shadow-[0_1px_0_#e2e8f0]">日期</td><td class="sticky top-[40px] z-20 bg-white py-2 px-4 md:px-6 font-semibold border-b border-slate-200 shadow-[0_1px_0_#e2e8f0]">項目 / 明細</td><td class="sticky top-[40px] z-20 bg-white py-2 px-4 md:px-6 font-semibold text-right border-b border-slate-200 shadow-[0_1px_0_#e2e8f0]">金額</td>`;
+            deskBody.appendChild(childHeaderTr);
+
+            const childHeaderCard = document.createElement('div');
+            childHeaderCard.className = 'sticky top-[40px] z-20 bg-white border-b border-slate-200 pl-12 pr-4 py-1.5 flex items-center justify-between text-[10px] font-bold text-black uppercase tracking-wider select-none shadow-sm';
+            childHeaderCard.innerHTML = `<div class="w-16 shrink-0">日期</div><div class="flex-1 px-2 text-center min-w-0">項目 / 明細</div><div class="w-20 text-right shrink-0">金額</div>`;
+            mobileList.appendChild(childHeaderCard);
+
+            group.items.forEach(exp => {
+              const hasIcon = (exp.receiptUrl && exp.receiptUrl.trim() !== '') ? '<i class="ph ph-image text-black ml-1"></i>' : '';
+              
+              const childTr = document.createElement('tr');
+              childTr.className = 'hover:bg-slate-50 transition-colors cursor-pointer bg-white';
+              childTr.onclick = () => openModal(exp.id);
+              childTr.innerHTML = `<td class="py-3 pl-12 md:pl-14 pr-4 md:pr-6 text-sm text-black border-b border-slate-100">${exp.date || '-'}</td><td class="py-3 px-4 md:px-6 text-sm text-black border-b border-slate-100 truncate"><div class="flex items-center gap-1"><span>${exp.category || '-'}</span>${hasIcon}</div></td><td class="py-3 px-4 md:px-6 text-sm font-semibold text-right tabular-nums ${exp.amount < 0 ? 'text-rose-600' : 'text-emerald-600'} border-b border-slate-100">${formatMoney(exp.amount)}</td>`;
+              deskBody.appendChild(childTr);
+
+              const childCard = document.createElement('div');
+              childCard.className = 'bg-white pl-12 pr-4 py-4 border-b border-slate-100 hover:bg-slate-50 cursor-pointer flex items-center justify-between';
+              childCard.onclick = () => openModal(exp.id);
+              childCard.innerHTML = `<div class="w-16 text-[10px] text-black shrink-0">${exp.date || '-'}</div><div class="flex-1 px-2 text-sm text-black font-medium truncate flex items-center"><span>${exp.category || '-'}</span>${hasIcon}</div><div class="w-20 text-sm font-bold tabular-nums ${exp.amount < 0 ? 'text-rose-600' : 'text-emerald-600'} text-right shrink-0">${formatMoney(exp.amount)}</div>`;
+              mobileList.appendChild(childCard);
+            });
+          }
+        });
+      });
+
+      updateStats(blockData, validItemCount);
     }
 
     function handleSearch() {
       const term = document.getElementById('searchInput').value.toLowerCase();
       filteredExpenses = sessionExpenses.filter(exp => exp.description?.toLowerCase().includes(term) || exp.category?.toLowerCase().includes(term) || exp.content?.toLowerCase().includes(term));
+      
+      const initBalRecord = { id: 'init-bal', date: '-', content: '114年基金結餘', amount: FIXED_INITIAL_BALANCE, description: '114年度結轉至本期結餘', category: '結餘', receiptUrl: '' };
+      
+      if (!term || initBalRecord.content.toLowerCase().includes(term) || initBalRecord.description.toLowerCase().includes(term) || initBalRecord.category.toLowerCase().includes(term)) {
+        filteredExpenses.unshift(initBalRecord);
+      }
+
       if (term) filteredExpenses.forEach(exp => expandedGroups.add(exp.content || '未分類項目'));
       renderLists();
     }
 
-    // CSV 安全取值函式
     const getCell = (lines, rowIndex, colIndex) => {
       if (lines.length <= rowIndex) return null;
       const v = lines[rowIndex].split(/,(?=(?:(?:[^"]*"){2})*[^"]*$)/).map(v => v.trim().replace(/^"|"$/g, '').replace(/\u00a0/g, ' '));
@@ -494,17 +624,36 @@
       }).filter(item => {
         const y4 = item.date.match(/(\d{4})/), y3 = item.date.match(/(11\d)/);
         let year = y4 ? parseInt(y4[0]) : (y3 ? parseInt(y3[0]) + 1911 : 0);
-        return year >= 2026 && (item.date || item.amount !== 0); // 排除 2026 以前或無效資料
+        return year >= 2026 && (item.date || item.amount !== 0);
       });
     }
 
+    // 🚀 新增：解析零用金獨立 CSV 邏輯
+    function parsePettyCashCSV(csvText) {
+      const lines = csvText.split(/\r?\n/).slice(1).filter(l => l.trim() !== '');
+      return lines.map((l, i) => {
+        const v = l.split(/,(?=(?:(?:[^"]*"){2})*[^"]*$)/).map(v => v.trim().replace(/^"|"$/g, '').replace(/\u00a0/g, ' '));
+        const expStr = v[1] || ''; // B欄:支出
+        const incStr = v[2] || ''; // C欄:收入
+        let amt = 0;
+        if (expStr) amt = -Math.abs(parseFloat(expStr.replace(/[^0-9.-]/g, '')) || 0);
+        else if (incStr) amt = Math.abs(parseFloat(incStr.replace(/[^0-9.-]/g, '')) || 0);
+        
+        return {
+          id: `pc-${i}`,
+          date: '-', // 零用金不支援日期查詢
+          content: '零用金收支', // 指派至 C 區塊
+          amount: amt,
+          description: v[4] || '', // E欄:文字內容
+          category: v[0] || '未分類', // A欄:項目
+          receiptUrl: v[5] || '', // F欄:圖片網址
+          isPettyCash: true
+        };
+      }).filter(item => item.amount !== 0 || item.category !== '未分類');
+    }
+
     async function handleLoadData() {
-      const syncBtn = document.getElementById('syncBtn');
-      const syncIcon = document.getElementById('syncIcon');
-      syncBtn.disabled = true; syncIcon.className = 'ph ph-arrows-clockwise animate-spin text-2xl md:text-3xl';
-      
       try {
-        // 🚀 Step 1: 讀取 CONFIG 全域設定
         try {
           const cUrl = `${configUrl}&t=${Date.now()}`;
           const cRes = await fetch(cUrl).catch(() => fetch(`https://api.allorigins.win/raw?url=${encodeURIComponent(cUrl)}`));
@@ -512,44 +661,50 @@
           if (cRes && cRes.ok) {
             const cTxt = await cRes.text();
             const configLines = cTxt.split(/\r?\n/).filter(l => l.trim() !== '');
-            
-            // 擷取第二列與第三列的設定值
-            const a2 = getCell(configLines, 1, 0); // CONFIG!A2 (開始日期)
-            const b2 = getCell(configLines, 1, 1); // CONFIG!B2 (年份)
-            const c2 = getCell(configLines, 1, 2); // CONFIG!C2 (季別)
-            const a3 = getCell(configLines, 2, 0); // CONFIG!A3 (結束日期)
+            const a2 = getCell(configLines, 1, 0); const b2 = getCell(configLines, 1, 1);
+            const c2 = getCell(configLines, 1, 2); const a3 = getCell(configLines, 2, 0); 
             
             if (a2) globalStartDate = new Date(a2);
             if (a3) globalEndDate = new Date(a3);
             if (b2) reportYear = b2;
             if (c2) reportQuarter = c2;
           }
-        } catch (configErr) {
-          console.warn('無法讀取 CONFIG 設定，將使用預設值。', configErr);
-        }
+        } catch (configErr) { console.warn('無法讀取 CONFIG 設定。', configErr); }
 
-        // 🚀 動態更新標題文字
-        const titleText = `民國${reportYear}年度第${reportQuarter}季 羅馬假期財務報表`;
+        const titleText = `民國${reportYear}年度第${reportQuarter}季 羅馬假期社區財務報告`;
         document.title = titleText;
-        document.getElementById('mainTitle').innerHTML = `民國${reportYear}年度第${reportQuarter}季 <span class="admin-trigger text-indigo-800" onclick="toggleAdminPanel()">羅馬假期</span>財務報表`;
+        document.getElementById('mainTitle').innerHTML = `民國${reportYear}年度第${reportQuarter}季 <span class="admin-trigger text-slate-800" onclick="toggleAdminPanel()">羅馬假期</span>社區財務報告`;
 
-        // 🚀 Step 2: 讀取 ALLINDEX 明細資料
+        // 🚀 雙軌非同步請求資料 (一般帳目 + 零用金)
         const fUrl = `${csvUrl}&t=${Date.now()}`;
-        let res = await fetch(fUrl).catch(() => fetch(`https://api.allorigins.win/raw?url=${encodeURIComponent(fUrl)}`));
-        if (!res.ok) throw new Error(`HTTP 錯誤 ${res.status}`);
+        const pcUrl = `${pettyCashUrl}&t=${Date.now()}`;
         
+        const [res, pcRes] = await Promise.all([
+          fetch(fUrl).catch(() => fetch(`https://api.allorigins.win/raw?url=${encodeURIComponent(fUrl)}`)),
+          fetch(pcUrl).catch(() => fetch(`https://api.allorigins.win/raw?url=${encodeURIComponent(pcUrl)}`))
+        ]);
+
+        if (!res.ok) throw new Error(`主帳目讀取錯誤 ${res.status}`);
         const txt = await res.text();
-        allExpenses = parseCSV(txt);
+
+        const mainExpenses = parseCSV(txt);
+
+        let pcExpenses = [];
+        if (pcRes && pcRes.ok) {
+           const pcTxt = await pcRes.text();
+           pcExpenses = parsePettyCashCSV(pcTxt);
+        }
         
-        // 將資料透過 CONFIG 的區間過濾，設定為預設顯示範圍
+        // 合併所有帳目
+        allExpenses = [...mainExpenses, ...pcExpenses];
+        
+        blockExpandedState = {}; // 🚀 重新同步資料時重置區塊開合狀態
         sessionExpenses = getGlobalFilteredExpenses();
         handleSearch();
         
       } catch (err) {
         document.getElementById('errorMsg').textContent = '同步資料失敗: ' + err.message;
         document.getElementById('errorBox').classList.remove('hidden');
-      } finally {
-        syncBtn.disabled = false; syncIcon.className = 'ph ph-arrows-clockwise text-2xl md:text-3xl';
       }
     }
 
