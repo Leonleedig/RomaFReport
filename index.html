@@ -272,11 +272,11 @@
     // 區塊定義
     const blocksConfig = [
       { id: 'A', title: 'A. 收入', keys: ['114年基金結餘', '管理費收入', '定存本息'] },
-      { id: 'B', title: 'B. 支出', keys: ['管理費代收支出', '清潔費支出', '零用金'] },
+      { id: 'B', title: 'B. 支出', keys: ['管理費代收支出', '轉帳支出', '零用金'] },
       { id: 'C', title: 'C. 零用金結餘', keys: ['零用金收支'] },
       { id: 'OTHER', title: 'D. 其他', keys: [] }
     ];
-    const groupOrder = ['114年基金結餘', '管理費收入', '定存本息', '管理費代收支出', '清潔費支出', '零用金', '零用金收支', '誤款收支'];
+    const groupOrder = ['114年基金結餘', '管理費收入', '定存本息', '管理費代收支出', '轉帳支出', '零用金', '零用金收支', '誤款收支'];
 
     function getGlobalFilteredExpenses() {
       let result = allExpenses;
