@@ -31,9 +31,9 @@
     }
     
     /* 🚀 彈性縮放字體，確保算式能在不同裝置維持絕佳比例 */
-    .math-val { font-size: clamp(0.8rem, 3.2vw, 2.2rem); }
-    .math-symbol { font-size: clamp(0.7rem, 2vw, 1.5rem); }
-    .math-label { font-size: clamp(0.5rem, 1.5vw, 0.85rem); }
+    .math-val { font-size: clamp(0.7rem, 4vw, 2.5rem); }
+    .math-symbol { font-size: clamp(0.6rem, 2.5vw, 1.8rem); }
+    .math-label { font-size: clamp(0.5rem, 1.8vw, 0.95rem); }
 
     .no-select {
       -webkit-touch-callout: none;
@@ -146,7 +146,7 @@
 
       <!-- 🚀 將算式區塊約束在 max-w-[95vw] 內，並置中對齊 -->
       <div class="mb-6 flex justify-center w-full shrink-0 px-2">
-        <div class="flex items-center justify-center gap-1 md:gap-4 math-text whitespace-nowrap max-w-[95vw] mx-auto w-full">
+        <div class="flex items-center justify-center gap-1 sm:gap-2 md:gap-4 math-text whitespace-nowrap max-w-[95vw] mx-auto w-full">
           <div class="flex flex-col items-center">
             <span id="mathA" class="math-val font-bold tabular-nums text-emerald-600">0</span>
             <span class="math-label text-black mt-1 font-medium">A.收入</span>
@@ -164,11 +164,11 @@
           <div class="math-symbol font-light text-black">=</div>
           <div class="flex flex-col items-center">
             <span id="mathTotal" class="math-val font-bold tabular-nums text-emerald-600">0</span>
-            <!-- 🚀 換行並微調單位文字的樣式 -->
-            <span class="math-label text-black mt-1 font-medium text-center leading-tight">
-              本季社區基金結餘<br>
-              <span class="text-[0.85em] font-normal opacity-80">(單位：新台幣)</span>
-            </span>
+            <!-- 🚀 強制換行並微調單位文字的樣式 -->
+            <div class="math-label text-black mt-1 font-medium flex flex-col items-center leading-tight">
+              <span>本季社區基金結餘</span>
+              <span class="text-[0.85em] font-normal opacity-80 mt-0.5">(單位：新台幣)</span>
+            </div>
           </div>
         </div>
       </div>
@@ -269,13 +269,8 @@
     let blockExpandedState = {}; // 🚀 記錄區塊標題列的開合狀態
     const FIXED_INITIAL_BALANCE = 216730; // 🚀 恢復為常數，鎖定為 216,730
     
-    // 區塊定義
-    const blocksConfig = [
-      { id: 'A', title: 'A. 收入', keys: ['114年基金結餘', '管理費收入', '定存本息'] },
-      { id: 'B', title: 'B. 支出', keys: ['管理費代收支出', '清潔費支出', '零用金'] },
-      { id: 'C', title: 'C. 零用金結餘', keys: ['零用金收支'] },
-      { id: 'OTHER', title: 'D. 其他', keys: [] }
-    ];
+    // 🚀 移除原本寫死的 blocksConfig 名單，僅保留優先排序權重
+    // 不在名單上的「新項目」，系統會自動依照筆畫順序排在這些項目的後面
     const groupOrder = ['114年基金結餘', '管理費收入', '定存本息', '管理費代收支出', '清潔費支出', '零用金', '零用金收支', '誤款收支'];
 
     function getGlobalFilteredExpenses() {
@@ -449,6 +444,7 @@
       }
       document.getElementById('emptyState').classList.add('hidden');
 
+      // 1. 動態抓取並自動去重 (相同字樣會歸類到同一個 key 裡面)
       const groupedData = {};
       filteredExpenses.forEach(exp => {
         const key = (exp.content && exp.content.trim()) ? exp.content.trim() : '未分類項目';
@@ -457,18 +453,35 @@
         groupedData[key].total += exp.amount;
       });
 
+      // 2. 準備 A, B, C 三大區塊的容器
       const blockData = {
-        'A': { title: blocksConfig[0].title, total: 0, itemCount: 0, groups: {} },
-        'B': { title: blocksConfig[1].title, total: 0, itemCount: 0, groups: {} },
-        'C': { title: blocksConfig[2].title, total: 0, itemCount: 0, groups: {} },
-        'OTHER': { title: blocksConfig[3].title, total: 0, itemCount: 0, groups: {} }
+        'A': { title: 'A. 收入', total: 0, itemCount: 0, groups: {} },
+        'B': { title: 'B. 支出', total: 0, itemCount: 0, groups: {} },
+        'C': { title: 'C. 零用金結餘', total: 0, itemCount: 0, groups: {} }
       };
 
+      // 3. 🚀 智慧分發系統 (判斷每個項目該去哪一區)
       Object.keys(groupedData).forEach(key => {
-        let assignedBlock = 'OTHER';
-        for (const cfg of blocksConfig) {
-          if (cfg.keys.includes(key)) { assignedBlock = cfg.id; break; }
+        let assignedBlock = 'B'; // 預設放在支出
+        
+        if (key === '零用金收支') {
+          assignedBlock = 'C'; // 鎖定 C 區
+        } else if (key === '114年基金結餘') {
+          assignedBlock = 'A'; // 鎖定 A 區
+        } else {
+          // ★ 智慧判定：根據該分類的「總金額」判定收支
+          let netTotal = groupedData[key].total;
+          if (netTotal > 0) {
+              assignedBlock = 'A'; // 總計為正數，歸類為收入
+          } else if (netTotal < 0) {
+              assignedBlock = 'B'; // 總計為負數，歸類為支出
+          } else {
+              // 若總計剛好為 0 (例如一筆+1000與一筆-1000抵銷)，尋找第一筆有數字的單據來判斷方向
+              const firstNonZero = groupedData[key].items.find(i => i.amount !== 0);
+              assignedBlock = (firstNonZero && firstNonZero.amount > 0) ? 'A' : 'B';
+          }
         }
+        
         blockData[assignedBlock].groups[key] = groupedData[key];
         blockData[assignedBlock].total += groupedData[key].total;
         blockData[assignedBlock].itemCount += groupedData[key].items.length;
